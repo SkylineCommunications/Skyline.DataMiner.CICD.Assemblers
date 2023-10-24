@@ -376,7 +376,7 @@
 
         private static EquivalencyAssertionOptions<NuGetPackageAssemblyData> ExcludeAssemblyPath(EquivalencyAssertionOptions<NuGetPackageAssemblyData> arg)
         {
-            arg.Excluding(x => x.SelectedMemberPath.EndsWith("AssemblyPath"));
+            arg.Excluding(x => x.Path.EndsWith("AssemblyPath"));
             return arg;
         }
     }
