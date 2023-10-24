@@ -1,0 +1,699 @@
+﻿namespace Skyline.DataMiner.CICD.Assemblers.Automation
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text.RegularExpressions;
+    using System.Threading.Tasks;
+
+    using NuGet.Packaging.Core;
+    using NuGet.Versioning;
+
+    using Skyline.DataMiner.CICD.Assemblers.Common;
+    using Skyline.DataMiner.CICD.Common.NuGet;
+    using Skyline.DataMiner.CICD.FileSystem;
+    using Skyline.DataMiner.CICD.Loggers;
+    using Skyline.DataMiner.CICD.Parsers.Automation.Xml;
+    using Skyline.DataMiner.CICD.Parsers.Common.VisualStudio.Projects;
+    using Skyline.DataMiner.CICD.Parsers.Common.Xml;
+
+    using EditXml = Skyline.DataMiner.CICD.Parsers.Common.XmlEdit;
+
+    /// <summary>
+    /// Automation script builder.
+    /// </summary>
+    public class AutomationScriptBuilder
+    {
+        private static readonly Regex RegexProjectPlaceholder = new Regex(@"\[Project:(?<projectName>.*)\]", RegexOptions.Compiled & RegexOptions.IgnoreCase);
+        private static readonly string DotNetAssemblyPath = FileSystem.Instance.Path.GetDirectoryName(typeof(object).Assembly.Location);
+        
+        private readonly IFileSystem _fileSystem = FileSystem.Instance;
+        private readonly ILogCollector logCollector;
+        private readonly string solutionDirectory;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AutomationScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="script">The Automation script.</param>
+        /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
+        /// <param name="allScripts">All the scripts in the Automation script solution.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
+        [Obsolete("Use the constructor with the solutionDirectory so it can take in account the NuGet.config from the solution.")]
+        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts)
+            : this(script,  projects, allScripts, solutionDirectory: null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AutomationScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="script">The Automation script.</param>
+        /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
+        /// <param name="allScripts">All the scripts in the Automation script solution.</param>
+        /// <param name="solutionDirectory">Directory where the solution is located</param>
+        /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
+        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, string solutionDirectory)
+        {
+            Model = script ?? throw new ArgumentNullException(nameof(script));
+            Document = script.Document;
+            Projects = projects ?? new Dictionary<string, Project>();
+
+            // ToList as it will be enumerated multiple times later on.
+            AllScripts = allScripts.ToList();
+
+            this.solutionDirectory = solutionDirectory;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AutomationScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="script">The Automation script.</param>
+        /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
+        /// <param name="allScripts">All the scripts in the Automation script solution.</param>
+        /// <param name="logCollector">The log collector</param>
+        /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="logCollector"/> is <see langword="null"/>.</exception>
+        [Obsolete("Use the constructor with the solutionDirectory so it can take in account the NuGet.config from the solution.")]
+        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, ILogCollector logCollector)
+            : this(script, projects, allScripts, logCollector, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AutomationScriptBuilder"/> class.
+        /// </summary>
+        /// <param name="script">The Automation script.</param>
+        /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
+        /// <param name="allScripts">All the scripts in the Automation script solution.</param>
+        /// <param name="logCollector">The log collector</param>
+        /// <param name="solutionDirectory">Directory where the solution is located</param>
+        /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="logCollector"/> is <see langword="null"/>.</exception>
+        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, ILogCollector logCollector, string solutionDirectory)
+            : this(script, projects, allScripts, solutionDirectory)
+        {
+            this.logCollector = logCollector ?? throw new ArgumentNullException(nameof(logCollector));
+        }
+
+        private XmlDocument Document { get; }
+
+        private Script Model { get; }
+
+        private IDictionary<string, Project> Projects { get; }
+
+        private IEnumerable<Script> AllScripts { get;  }
+
+        /// <summary>
+        /// Combines all the cs files in the project into a single string.
+        /// </summary>
+        /// <param name="project">Project.</param>
+        /// <returns>String with all the code from the cs files.</returns>
+        /// <exception cref="AssemblerException">No code files found in specified project.</exception>
+        public static string CombineProjectFiles(Project project)
+        {
+            var files = GetRelevantCodeFilesSorted(project);
+
+            if (files.Count == 0)
+            {
+                throw new AssemblerException($"No code files found in project '{project.AssemblyName}'");
+            }
+
+            return CSharpCodeCombiner.CombineFiles(files);
+        }
+
+        /// <summary>
+        /// Will try to find the project name from the placeholder in the xml.
+        /// </summary>
+        /// <param name="text">Placeholder text.</param>
+        /// <param name="projectName">Found project name.</param>
+        /// <param name="match">Regex Match.</param>
+        /// <returns>True when finding the project name. Otherwise false.</returns>
+        public static bool TryFindProjectPlaceholder(string text, out string projectName, out Match match)
+        {
+            match = RegexProjectPlaceholder.Match(text);
+            if (match.Success)
+            {
+                projectName = match.Groups["projectName"].Value;
+                return true;
+            }
+
+            projectName = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Builds the solution.
+        /// </summary>
+        /// <returns>The build result.</returns>
+        /// <exception cref="AggregateException">Aggregation of exception(s) thrown during building.</exception>
+        public async Task<BuildResultItems> BuildAsync()
+        {
+            var xmlEdit = new EditXml.XmlDocument(Document);
+
+            return await BuildExeActionsAsync(xmlEdit).ConfigureAwait(false);
+        }
+
+        private static bool IsMainCodeFile(ProjectFile file)
+        {
+            var content = file.Content;
+            return !String.IsNullOrWhiteSpace(content)
+                   && content.Contains("class Script")
+                   && (content.Contains("void Run(Engine") || content.Contains("void Run(IEngine"));
+        }
+
+        private async Task BuildDllImportsAsync(EditXml.XmlElement editExe, Project project, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems)
+        {
+            // remove existing references
+            foreach (var existing in editExe.Elements["Param"].ToList())
+            {
+                var typeAttr = existing.Attributes.FirstOrDefault(x => String.Equals(x.Name, "type", StringComparison.OrdinalIgnoreCase));
+
+                if (String.Equals(typeAttr?.Value, "ref"))
+                {
+                    editExe.Children.Remove(existing);
+                }
+            }
+
+            NuGetPackageAssemblyData nugetAssemblyData = null;
+
+            // PackageReferences (NuGet packages)
+            if (project.PackageReferences != null)
+            {
+                List<PackageIdentity> packageIdentities = GetPackageIdentities(project.PackageReferences);
+
+                nugetAssemblyData = await ProcessPackageReferences(editExe, project, packageReferenceProcessor, buildResultItems, packageIdentities);
+            }
+
+            // Add references from C# project.
+            if (project.References != null)
+            {
+                ProcessReferences(editExe, project, nugetAssemblyData, packageReferenceProcessor);
+            }
+        }
+
+        private async Task<NuGetPackageAssemblyData> ProcessPackageReferences(EditXml.XmlElement editExe, Project project, PackageReferenceProcessor packageReferenceProcessor,
+            BuildResultItems buildResultItems, IList<PackageIdentity> packageIdentities)
+        {
+            NuGetPackageAssemblyData nugetAssemblyData = null;
+
+            if (packageIdentities.Count > 0)
+            {
+                nugetAssemblyData = await packageReferenceProcessor.ProcessAsync(packageIdentities, project.TargetFrameworkMoniker, DevPackHelper.AutomationDevPackNuGetDependenciesIncludingTransitive).ConfigureAwait(false);
+                LogDebug($"NuGetPackageAssemblyData: {nugetAssemblyData}");
+                
+                ProcessFrameworkAssemblies(editExe, nugetAssemblyData);
+                ProcessLibAssemblies(editExe, buildResultItems, nugetAssemblyData);
+            }
+
+            return nugetAssemblyData;
+        }
+
+        private void ProcessLibAssemblies(EditXml.XmlElement editExe, BuildResultItems buildResultItems, NuGetPackageAssemblyData nugetAssemblyData)
+        {
+            HashSet<string> directoriesWithExplicitDllImport = new HashSet<string>();
+            Dictionary<string, string> potentialRemainingDirectoryImports = new Dictionary<string, string>();
+
+            if (nugetAssemblyData.DllImportNugetAssemblyReferences.Count > 0)
+            {
+                // At this point it could be that there are multiple assemblies with the same name (if different NuGet packages contain the same assembly).
+                // If this is the case, we select the highest version.
+                Dictionary<string, List<PackageAssemblyReference>> assemblies = BuildAssemblyPackageMap(_fileSystem, nugetAssemblyData.DllImportNugetAssemblyReferences);
+                AddAssemblyParamReferences(editExe, directoriesWithExplicitDllImport, potentialRemainingDirectoryImports, assemblies);
+
+                foreach (var directoryPath in potentialRemainingDirectoryImports.Keys)
+                {
+                    if (!directoriesWithExplicitDllImport.Contains(directoryPath))
+                    {
+                        LogDebug($"ProcessLibAssemblies|Build DllImportDirectoryReferences|Dir: {directoryPath}");
+                        nugetAssemblyData.DllImportDirectoryReferences.Add(directoryPath);
+                        nugetAssemblyData.DllImportDirectoryReferencesAssembly.Add(directoryPath, potentialRemainingDirectoryImports[directoryPath]);
+                    }
+                }
+            }
+
+            HashSet<string> nugetPackages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (string dir in directoriesWithExplicitDllImport)
+            {
+                string packageName = dir.Split(_fileSystem.Path.DirectorySeparatorChar).First();
+
+                LogDebug($"ProcessLibAssemblies|Build nugetPackages|Dir: {dir}|PackageName: {packageName}");
+                nugetPackages.Add(packageName);
+            }
+
+            foreach (string dir in nugetAssemblyData.DllImportDirectoryReferences)
+            {
+                string packageName = dir.Split('\\').First();
+
+                LogDebug($"ProcessLibAssemblies|DllImportDirectoryReferences|Check to add|Dir: {dir}|PackageName: {packageName}");
+                if (nugetPackages.Contains(packageName))
+                {
+                    continue;
+                }
+
+                if (!ScriptHelper.IsDefaultImportDll(dir))
+                {
+                    var referenceAssembly = nugetAssemblyData.DllImportDirectoryReferencesAssembly[dir];
+
+                    LogDebug($"ProcessLibAssemblies|DllImportDirectoryReferences|Add Param for {referenceAssembly}");
+
+                    // Add reference to selected item. Only add if no other package with same name has been added already.
+                    var fullPathToAssembly = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\ProtocolScripts\DllImport", referenceAssembly);
+                    AddParamToXml(editExe, fullPathToAssembly);
+                }
+            }
+
+            foreach (var libItem in nugetAssemblyData.NugetAssemblies)
+            {
+                if (buildResultItems.Assemblies.FirstOrDefault(b => b.AssemblyPath == libItem.AssemblyPath) == null)
+                {
+                    buildResultItems.Assemblies.Add(libItem);
+                }
+            }
+        }
+
+        private void AddAssemblyParamReferences(EditXml.XmlElement editExe, HashSet<string> directoriesWithExplicitDllImport, Dictionary<string, string> potentialRemainingDirectoryImports, Dictionary<string, List<PackageAssemblyReference>> assemblies)
+        {
+            foreach (var assembly in assemblies.Keys)
+            {
+                var packagesContainingAssembly = assemblies[assembly];
+
+                if (packagesContainingAssembly.Count == 1)
+                {
+                    var libItem = packagesContainingAssembly[0];
+
+                    directoriesWithExplicitDllImport.Add(libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Length));
+
+                    LogDebug($"AddAssemblyParamReferences|Add Param for {libItem}");
+
+                    // Add reference to assembly.
+                    var fullPathToAssembly = GetPathForPackage(libItem);
+                    AddParamToXml(editExe, fullPathToAssembly);
+                }
+                else
+                {
+                    PackageAssemblyReference selectedItem = SelectMostRecentVersion(packagesContainingAssembly);
+
+                    if (selectedItem == null)
+                    {
+                        continue;
+                    }
+
+                    directoriesWithExplicitDllImport.Add(selectedItem.DllImport.Substring(0, selectedItem.DllImport.Length - assembly.Length));
+
+                    LogDebug($"AddAssemblyParamReferences|Add Param for {selectedItem}");
+
+                    // Add reference to selected item.
+                    var fullPathToAssembly = GetPathForPackage(selectedItem);
+                    AddParamToXml(editExe, fullPathToAssembly);
+
+                    // Add other items that were not selected as hint directories.
+                    AddRemainingHintPathDirectories(potentialRemainingDirectoryImports, assembly, packagesContainingAssembly, selectedItem);
+                }
+            }
+
+            string GetPathForPackage(PackageAssemblyReference reference)
+            {
+                string folderLocation;
+                if (reference.IsFilesPackage)
+                {
+                    folderLocation = @"C:\Skyline DataMiner\Files";
+                }
+                else
+                {
+                    folderLocation = @"C:\Skyline DataMiner\ProtocolScripts\DllImport";
+                }
+
+                return _fileSystem.Path.Combine(folderLocation, reference.DllImport);
+            }
+        }
+
+        private static void AddRemainingHintPathDirectories(Dictionary<string, string> potentialRemainingDirectoryImports, string assembly, List<PackageAssemblyReference> packagesContainingAssembly, PackageAssemblyReference selectedItem)
+        {
+            foreach (var libItem in packagesContainingAssembly)
+            {
+                if (libItem == selectedItem)
+                {
+                    continue;
+                }
+
+                string directoryPath = libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Length);
+
+                if (!potentialRemainingDirectoryImports.ContainsKey(directoryPath))
+                {
+                    potentialRemainingDirectoryImports.Add(directoryPath, libItem.DllImport);
+                }
+            }
+        }
+
+        private static PackageAssemblyReference SelectMostRecentVersion(IList<PackageAssemblyReference> packagesContainingAssembly)
+        {
+            PackageAssemblyReference selectedItem = null;
+            Version mostRecentVersion = null;
+
+            foreach (var libItem in packagesContainingAssembly)
+            {
+                var version = AssemblyName.GetAssemblyName(libItem.AssemblyPath).Version;
+
+                if (mostRecentVersion == null || version > mostRecentVersion)
+                {
+                    mostRecentVersion = version;
+                    selectedItem = libItem;
+                }
+            }
+
+            return selectedItem;
+        }
+
+        private static Dictionary<string, List<PackageAssemblyReference>> BuildAssemblyPackageMap(IFileSystem fs, IList<PackageAssemblyReference> dllImportNugetAssemblyReferences)
+        {
+            Dictionary<string, List<PackageAssemblyReference>> assemblies = new Dictionary<string, List<PackageAssemblyReference>>();
+
+            foreach (var libItem in dllImportNugetAssemblyReferences)
+            {
+                string assemblyName = fs.Path.GetFileName(libItem.DllImport);
+
+                if (assemblies.TryGetValue(assemblyName, out List<PackageAssemblyReference> entries))
+                {
+                    entries.Add(libItem);
+                }
+                else
+                {
+                    assemblies.Add(assemblyName, new List<PackageAssemblyReference> { libItem });
+                }
+            }
+
+            return assemblies;
+        }
+
+        private void ProcessReferences(EditXml.XmlElement editExe, Project project, NuGetPackageAssemblyData nugetAssemblyData, PackageReferenceProcessor packageReferenceProcessor)
+        {
+            foreach (var r in project.References)
+            {
+                ProcessReference(r, editExe, nugetAssemblyData, packageReferenceProcessor);
+            }
+        }
+
+        private void ProcessReference(Reference r, EditXml.XmlElement editExe, NuGetPackageAssemblyData nugetAssemblyData, PackageReferenceProcessor packageReferenceProcessor)
+        {
+            var dll = r.GetDllName();
+            if (ScriptHelper.IsDefaultImportDll(dll) ||
+                (nugetAssemblyData != null && nugetAssemblyData.ProcessedAssemblies.Contains(dll)))
+            {
+                return;
+            }
+
+            if (r.HintPath?.Contains(packageReferenceProcessor.NuGetRootPath) == true)
+            {
+                // DLL is from a NuGet but is transitive from precompile or other project reference.
+                // These can be ignored.
+            }
+            else if (ScriptHelper.NeedsFilesPath(dll))
+            {
+                dll = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\Files", dll);
+            }
+            else if (!_fileSystem.File.Exists(_fileSystem.Path.Combine(DotNetAssemblyPath, dll)) && !_fileSystem.Path.IsPathRooted(dll))
+            {
+                dll = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\ProtocolScripts", dll);
+            }
+            else
+            {
+                // Do nothing.
+            }
+
+            LogDebug($"ProcessReference|Add Param for {dll}");
+            AddOrUpdateReferenceInExeBlock(_fileSystem, dll, editExe);
+        }
+        
+        private static void AddOrUpdateReferenceInExeBlock(IFileSystem fs, string dll, EditXml.XmlElement editExe)
+        {
+            if (HasDllImport(fs, editExe, dll, out var existing))
+            {
+                existing.InnerText = dll;
+            }
+            else
+            {
+                AddParamToXml(editExe, dll);
+            }
+        }
+
+        private void ProcessFrameworkAssemblies(EditXml.XmlElement editExe, NuGetPackageAssemblyData nugetAssemblyData)
+        {
+            foreach (var frameworkAssembly in nugetAssemblyData.DllImportFrameworkAssemblyReferences)
+            {
+                if (!ScriptHelper.IsDefaultImportDll(frameworkAssembly))
+                {
+                    LogDebug($"ProcessFrameworkAssemblies|Add Param for {frameworkAssembly}");
+
+                    // Add reference to .NET framework assembly.
+                    AddParamToXml(editExe, frameworkAssembly);
+                }
+            }
+        }
+
+        private static List<PackageIdentity> GetPackageIdentities(IEnumerable<PackageReference> packageReferences)
+        {
+            var packageIdentities = new List<PackageIdentity>();
+
+            foreach (var packageReference in packageReferences)
+            {
+                var packageIdentity = new PackageIdentity(packageReference.Name, NuGetVersion.Parse(packageReference.Version));
+                packageIdentities.Add(packageIdentity);
+            }
+
+            return packageIdentities;
+        }
+
+        private static void AddParamToXml(EditXml.XmlElement editExe, string dllPath, string type = "ref")
+        {
+            var newParam = new EditXml.XmlElement("Param", dllPath);
+            newParam.Attributes.Add(new EditXml.XmlAttribute("type", type));
+            editExe.Children.Add(newParam);
+        }
+
+        private static bool HasDllImport(IFileSystem fs, EditXml.XmlElement editExe, string dll, out EditXml.XmlElement existing)
+        {
+            foreach (var p in editExe.Elements["param"])
+            {
+                try
+                {
+                    if (!String.Equals(p.Attribute["type"]?.Value, "ref") ||
+                        !String.Equals(fs.Path.GetFileName(p.InnerText), fs.Path.GetFileName(dll), StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                }
+                catch (Exception)
+                {
+                    // ignore
+                    continue;
+                }
+
+                existing = p;
+                return true;
+            }
+
+            existing = null;
+            return false;
+        }
+
+        private static bool HasScriptRef(EditXml.XmlElement editExe, string scriptRef)
+        {
+            foreach (var p in editExe.Elements["param"])
+            {
+                if (String.Equals(p.Attribute["type"]?.Value, "scriptRef")
+                    && String.Equals(p.InnerText, scriptRef))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ApplyCDataContent(ScriptExe exe, EditXml.XmlElement editExe, string newContent)
+        {
+            EditXml.XmlCDATA editCData = null;
+
+            if (exe.NodeCDATA != null)
+            {
+                editCData = editExe.TryFindNode(exe.NodeCDATA) as EditXml.XmlCDATA;
+            }
+
+            if (editCData == null)
+            {
+                editCData = new EditXml.XmlCDATA();
+
+                var valueNode = editExe.Element["Value"];
+                valueNode.Children.Clear();
+                valueNode.Children.Add(editCData);
+            }
+
+            editCData.InnerText = newContent;
+        }
+
+        private static IList<ProjectFile> GetRelevantCodeFilesSorted(Project project)
+        {
+            var files = project.Files
+                               .Where(x => x.Name.EndsWith(".cs") && !x.Name.EndsWith("AssemblyInfo.cs"))
+                               .OrderByDescending(IsMainCodeFile)
+                               .ThenByDescending(x => x.Name.StartsWith("script", StringComparison.OrdinalIgnoreCase))
+                               .ThenBy(x => x.Name)
+                               .ToList();
+
+            return files;
+        }
+
+        private void BuildScriptReferences(EditXml.XmlElement editExe, Project project)
+        {
+            if (project.ProjectReferences == null)
+            {
+                return;
+            }
+
+            foreach (var r in project.ProjectReferences)
+            {
+                ScriptExe refExe;
+
+                if (r.Name == "AutomationScript_ClassLibrary")
+                {
+                    refExe = Model.ScriptExes.FirstOrDefault(x => String.Equals(x.LibraryName, "DIS Class Library"));
+                }
+                else
+                {
+                    refExe = FindExeBlockReferenceInScript(project, r);
+                }
+
+                if (refExe != null)
+                {
+                    string scriptRef = "[AutomationScriptName]:" + refExe.LibraryName;
+
+                    if (!HasScriptRef(editExe, scriptRef))
+                    {
+                        AddParamToXml(editExe, scriptRef, "scriptRef");
+                    }
+
+                    continue;
+                }
+
+                // Find exe from another script
+                (string scriptName, ScriptExe scriptExe) = FindExeFromOtherScript(project, r);
+
+                if (scriptExe != null)
+                {
+                    string scriptRef = scriptName + ":" + scriptExe.LibraryName;
+
+                    if (!HasScriptRef(editExe, scriptRef))
+                    {
+                        AddParamToXml(editExe, scriptRef, "scriptRef");
+                    }
+                }
+            }
+        }
+
+        private (string scriptName, ScriptExe scriptExe)FindExeFromOtherScript(Project project, ProjectReference r)
+        {
+            // Check if the exe block belongs to another script.
+            foreach (var script in AllScripts)
+            {
+                var referencedProjectName = r.Name;
+
+                foreach (var exe in script.ScriptExes)
+                {
+                    if (TryFindProjectPlaceholder(exe.Code, out string projectName, out _)
+                        && String.Equals(projectName, referencedProjectName))
+                    {
+                        if (String.IsNullOrWhiteSpace(exe.LibraryName))
+                        {
+                            throw new AssemblerException(
+                                $"Missing 'libraryName' param on exe {exe.Id} (project '{projectName}') which is referenced by project '{project.AssemblyName}'");
+                        }
+
+                        return (script.Name, exe);
+                    }
+                }
+            }
+
+            return (null, null);
+        }
+
+        private ScriptExe FindExeBlockReferenceInScript(Project project, ProjectReference r)
+        {
+            ScriptExe refExe = null;
+
+            // check if this is a reference to another Exe block in the same script.
+            foreach (var exe in Model.ScriptExes)
+            {
+                if (TryFindProjectPlaceholder(exe.Code, out string projectName, out _)
+                    && String.Equals(projectName, r.Name))
+                {
+                    if (String.IsNullOrWhiteSpace(exe.LibraryName))
+                    {
+                        throw new AssemblerException($"Missing 'libraryName' param on exe {exe.Id} (project '{projectName}') which is referenced by project '{project.AssemblyName}'");
+                    }
+
+                    refExe = exe;
+                    break;
+                }
+            }
+
+            return refExe;
+        }
+
+        private async Task<BuildResultItems> BuildExeActionsAsync(EditXml.XmlDocument xmlEdit)
+        {
+            PackageReferenceProcessor packageReferenceProcessor;
+            if (logCollector == null)
+            {
+                packageReferenceProcessor = new PackageReferenceProcessor(solutionDirectory);
+            }
+            else
+            {
+                packageReferenceProcessor = new PackageReferenceProcessor(logCollector, solutionDirectory);
+            }
+            
+            BuildResultItems buildResultItems = new BuildResultItems();
+
+            foreach (var exe in Model.ScriptExes)
+            {
+                if (String.Equals(exe.Type, "csharp", StringComparison.OrdinalIgnoreCase))
+                {
+                    await BuildExeActionAsync(xmlEdit, exe, packageReferenceProcessor, buildResultItems).ConfigureAwait(false);
+                }
+            }
+
+            buildResultItems.Document = xmlEdit.GetXml();
+
+            return buildResultItems;
+        }
+
+        private async Task BuildExeActionAsync(EditXml.XmlDocument xmlEdit, ScriptExe exe, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems)
+        {
+            var editExe = xmlEdit.TryFindNode(exe.Node);
+            if (editExe != null && TryFindProjectPlaceholder(exe.Code, out string projectName, out Match match))
+            {
+                if (!Projects.TryGetValue(projectName, out var project))
+                {
+                    throw new AssemblerException($"Project with name '{projectName}' could not be found!");
+                }
+
+                string combinedCode = CombineProjectFiles(project);
+
+                var newContent = exe.Code.Replace(match.Value, combinedCode);
+                ApplyCDataContent(exe, editExe, newContent);
+
+                await BuildDllImportsAsync(editExe, project, packageReferenceProcessor, buildResultItems).ConfigureAwait(false);
+                BuildScriptReferences(editExe, project);
+
+                // format
+                editExe.Format();
+            }
+        }
+
+        private void LogDebug(string message)
+        {
+            logCollector?.ReportDebug(Model?.Name + "|" + message);
+        }
+    }
+}

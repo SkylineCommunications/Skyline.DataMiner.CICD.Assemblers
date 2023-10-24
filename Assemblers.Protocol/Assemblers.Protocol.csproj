@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<AssemblyName>Skyline.DataMiner.CICD.$(MSBuildProjectName)</AssemblyName>
+		<RootNamespace>Skyline.DataMiner.CICD.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Authors>SkylineCommunications</Authors>
+		<Company>Skyline Communications</Company>
+		<PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
+		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageProjectUrl>https://skyline.be/</PackageProjectUrl>
+		<PackageTags>Skyline;DataMiner;CICD</PackageTags>
+		<Description>Library providing methods for converting Visual Studio DIS connector solutions to individual DataMiner connector artifacts (e.g. XML, DLLs,...).</Description>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryUrl>https://github.com/SkylineCommunications/Skyline.DataMiner.CICD.Assemblers</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\_NuGetItems\icon.png" Link="icon.png">
+			<PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+		</None>
+		<None Include="..\_NuGetItems\LICENSE.txt" Link="LICENSE.txt">
+			<PackagePath>\</PackagePath>
+			<Pack>True</Pack>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Skyline.DataMiner.CICD.Models.Protocol" Version="1.0.4" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Assemblers.Common\Assemblers.Common.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="$(MSBuildProjectName)Tests" />
+	</ItemGroup>
+
+</Project>
