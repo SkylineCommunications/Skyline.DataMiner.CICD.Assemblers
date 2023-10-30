@@ -21,7 +21,20 @@
     public class ProtocolBuilderTests
     {
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_BasicAsync()
+        public void TestProtocol()
+        {
+            var solutionFilePath = @"D:\TESTING\ConnectorSDKStyle\ConnectorSDKStyle.sln";
+            ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath);
+			ProtocolBuilder builder = new ProtocolBuilder(solution);
+
+            var buildResultItems = builder.Build();
+
+            File.WriteAllText(@"D:\TESTING\resultProtocol.xml", buildResultItems.Document);
+		}
+
+
+        [TestMethod]
+        public void ProtocolCompiler_ProtocolBuilder_Basic()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -44,7 +57,7 @@
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -53,7 +66,7 @@
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_MultipleQActionsAsync()
+        public void ProtocolCompiler_ProtocolBuilder_MultipleQActions()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -82,7 +95,7 @@
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -91,7 +104,7 @@
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_VersionHistoryAsync()
+        public void ProtocolCompiler_ProtocolBuilder_VersionHistory()
         {
             string originalProtocol = @"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""no"" ?>
 <Protocol>
@@ -209,7 +222,7 @@ DATE          VERSION     AUTHOR                         COMMENTS
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -218,7 +231,7 @@ DATE          VERSION     AUTHOR                         COMMENTS
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_MultipleFilesAsync()
+        public void ProtocolCompiler_ProtocolBuilder_MultipleFiles()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -252,7 +265,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -278,15 +291,13 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            var exception = Assert.ThrowsException<AggregateException>(() => builder.BuildAsync().Result);
+            var exception = Assert.ThrowsException<AssemblerException>(() => builder.Build());
 
-            Assert.IsNotNull(exception.InnerException);
-            Assert.IsInstanceOfType(exception.InnerException, typeof(AssemblerException));
-            Assert.AreEqual("Cannot replace QAction 1, because the target XML node is not empty!", exception.InnerException.Message);
+            Assert.AreEqual("Cannot replace QAction 1, because the target XML node is not empty!", exception.Message);
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_DllImportsAsync()
+        public void ProtocolCompiler_ProtocolBuilder_DllImports()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -313,7 +324,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -322,7 +333,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_DllImports_NoDuplicateAsync()
+        public void ProtocolCompiler_ProtocolBuilder_DllImports_NoDuplicate()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -349,7 +360,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -358,7 +369,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_DllImports_ProjectReference()
+        public void ProtocolCompiler_ProtocolBuilder_DllImports_ProjectReference()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -385,7 +396,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
@@ -394,7 +405,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_ClassLibraryAsync()
+        public void ProtocolCompiler_ProtocolBuilder_ClassLibrary()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -429,7 +440,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -438,7 +449,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_ReferencedQActionAsync()
+        public void ProtocolCompiler_ProtocolBuilder_ReferencedQAction()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -471,7 +482,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
@@ -480,7 +491,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_ReferencedQActionWithCustomNameAsync()
+        public void ProtocolCompiler_ProtocolBuilder_ReferencedQActionWithCustomName()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -513,7 +524,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
@@ -532,15 +543,13 @@ class Class1 {}]]>
 
             var projects = new Dictionary<string, Project>();
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
-            var exception = Assert.ThrowsException<AggregateException>(() => builder.BuildAsync().Result);
+            var exception = Assert.ThrowsException<AssemblerException>(() => builder.Build());
 
-            Assert.IsNotNull(exception.InnerException);
-            Assert.IsInstanceOfType(exception.InnerException, typeof(AssemblerException));
-            Assert.AreEqual("Project with name 'QAction_1' could not be found!", exception.InnerException.Message);
+            Assert.AreEqual("Project with name 'QAction_1' could not be found!", exception.Message);
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_MissingNameAsync()
+        public void ProtocolCompiler_ProtocolBuilder_MissingName()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -563,7 +572,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -572,7 +581,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_JScriptQActionAsync()
+        public void ProtocolCompiler_ProtocolBuilder_JScriptQAction()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -598,7 +607,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                 .WithTest(Input.FromString(result)).Build();
@@ -607,7 +616,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_SpecialCharactersAsync()
+        public void ProtocolCompiler_ProtocolBuilder_SpecialCharacters()
         {
             string originalProtocol = @"<Protocol>
 	<QActions>
@@ -630,7 +639,7 @@ class Class1 {}]]>
 
             ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects);
 
-            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = builder.Build().Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
@@ -639,7 +648,7 @@ class Class1 {}]]>
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_Solution_Build()
+        public void ProtocolCompiler_Solution_Build()
         {
             // arrange
             var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -650,7 +659,7 @@ class Class1 {}]]>
 
             // act
             ProtocolBuilder builder = new ProtocolBuilder(solution);
-            var buildResultItems = await builder.BuildAsync().ConfigureAwait(false);
+            var buildResultItems = builder.Build();
 
             string result = buildResultItems.Document;
 

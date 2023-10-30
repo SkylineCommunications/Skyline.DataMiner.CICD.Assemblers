@@ -7,9 +7,8 @@
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
-
-    using NuGet.Packaging.Core;
-    using NuGet.Versioning;
+	using NuGet.Packaging.Core;
+	using NuGet.Versioning;
 
     using Skyline.DataMiner.CICD.Assemblers.Common;
     using Skyline.DataMiner.CICD.Loggers;
@@ -42,6 +41,8 @@
             {
                 throw new ArgumentNullException(nameof(solution));
             }
+
+            SolutionFilePath = solution.SolutionPath;
 
             Document = solution.ProtocolDocument;
             Model = new ProtocolModel(Document);
@@ -80,10 +81,16 @@
         }
 
         /// <summary>
-        /// Gets the XML document of the protocol.
+        /// Gets the solution file path.
         /// </summary>
-        /// <value>The protocol model.</value>
-        public XmlDocument Document { get; }
+        /// <value>The solution file path.</value>
+		public string SolutionFilePath { get; }
+
+		/// <summary>
+		/// Gets the XML document of the protocol.
+		/// </summary>
+		/// <value>The protocol model.</value>
+		public XmlDocument Document { get; }
 
         /// <summary>
         /// Gets the protocol model/
@@ -105,10 +112,10 @@
         /// No code files found for QAction -or-
         /// File could not be found in project -or-
         /// Cannot replace QAction, because the target XML node is not empty.</exception>
-        public async Task<BuildResultItems> BuildAsync()
+        public BuildResultItems Build()
         {
             var protocolEdit = new ProtocolDocumentEdit(Document, Model);
-            return await BuildResultsAsync(protocolEdit).ConfigureAwait(false);
+            return BuildResults(protocolEdit);
         }
 
         /// <summary>
@@ -152,36 +159,36 @@
             return files;
         }
 
-        private async Task<BuildResultItems> BuildResultsAsync(ProtocolDocumentEdit protocolEdit)
+        private BuildResultItems BuildResults(ProtocolDocumentEdit protocolEdit)
         {
             BuildResultItems buildResultItems = new BuildResultItems();
 
-            await BuildQActions(protocolEdit, buildResultItems, Model?.Protocol?.Compliancies).ConfigureAwait(false);
+            BuildQActions(protocolEdit, buildResultItems, Model?.Protocol?.Compliancies);
             BuildVersionHistoryComment(protocolEdit, Model);
             buildResultItems.Document = protocolEdit.Document.GetXml();
 
             return buildResultItems;
         }
 
-        private async Task BuildQActions(ProtocolDocumentEdit protocolEdit, BuildResultItems buildResultItems, ICompliancies compliancies)
+        private void BuildQActions(ProtocolDocumentEdit protocolEdit, BuildResultItems buildResultItems, ICompliancies compliancies)
         {
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+			ProjectAssetsProcessor projectAssetProcessor = new ProjectAssetsProcessor(SolutionFilePath);
 
-            var qactions = protocolEdit.Protocol?.QActions;
+			var qactions = protocolEdit.Protocol?.QActions;
             if (qactions != null)
             {
                 foreach (var qa in qactions)
                 {
-                    await BuildQAction(qa, qactions.Read, packageReferenceProcessor, buildResultItems, compliancies).ConfigureAwait(false);
+                    BuildQAction(qa, qactions.Read, projectAssetProcessor, buildResultItems, compliancies);
                 }
             }
         }
 
-        private async Task BuildQAction(QActionsQAction qa, IQActions allQActions, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems, ICompliancies compliancies)
+        private void BuildQAction(QActionsQAction qa, IQActions allQActions, ProjectAssetsProcessor projectAssetProcessor, BuildResultItems buildResultItems, ICompliancies compliancies)
         {
             if (qa.Encoding?.Value != EnumQActionEncoding.Csharp)
             {
-                // skip JScript etc..
+                // Skip non C# QActions (e.g. JScript).
                 return;
             }
 
@@ -196,8 +203,8 @@
             // replace code
             var hasQActionCodeChanges = BuildQActionCode(qa, project, qaId);
 
-            // DLL imports
-            var hasDllImportChanges = await BuildQActionDllImports(qa, project, allQActions, packageReferenceProcessor, buildResultItems, compliancies).ConfigureAwait(false);
+            // build DLL imports
+            var hasDllImportChanges = BuildQActionDllImports(qa, project, projectAssetProcessor, allQActions, buildResultItems, compliancies);
 
             // format
             if (hasQActionCodeChanges || hasDllImportChanges)
@@ -225,7 +232,37 @@
             return hasChanges;
         }
 
-        private static async Task<bool> BuildQActionDllImports(QActionsQAction qa, Project project, IQActions allQActions, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems, ICompliancies compliancies)
+
+        private static bool BuildQActionDllImports(QActionsQAction qa, Project project, ProjectAssetsProcessor projectAssetProcessor, IQActions allQActions, BuildResultItems buildResultItems, ICompliancies compliancies)
+        {
+			bool hasChanges = false;
+
+			var dllImports = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			string dllsFolder = null;
+			if (project.Path != null)
+			{
+				dllsFolder = Path.Combine(Directory.GetParent(Path.GetDirectoryName(project.Path)).FullName, @"Dlls\");
+			}
+
+            // project.assets.json contains both package and project references.
+			NuGetPackageAssemblyData nugetAssemblyData = ProcessPackageReferencesViaAssets(project, projectAssetProcessor, buildResultItems, dllImports);
+
+            // Process regular references (if not yet added).
+			ProcessReferences(project, projectAssetProcessor.NuGetRootPath, compliancies, nugetAssemblyData, dllsFolder, dllImports);
+			ProcessProjectReferences(project, allQActions, dllImports);
+
+			// Edit QAction@dllImport
+			if (dllImports.Count > 0)
+			{
+				qa.DllImport = String.Join(";", dllImports);
+				hasChanges = true;
+			}
+
+			return hasChanges;
+		}
+
+		private static async Task<bool> BuildQActionDllImportsOld(QActionsQAction qa, Project project, IQActions allQActions, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems, ICompliancies compliancies)
         {
             bool hasChanges = false;
 
@@ -238,7 +275,7 @@
             }
 
             NuGetPackageAssemblyData nugetAssemblyData = await ProcessPackageReferences(project, packageReferenceProcessor, buildResultItems, dllImports);
-            ProcessReferences(project, packageReferenceProcessor, compliancies, nugetAssemblyData, dllsFolder, dllImports);
+            ProcessReferences(project, packageReferenceProcessor.NuGetRootPath, compliancies, nugetAssemblyData, dllsFolder, dllImports);
             ProcessProjectReferences(project, allQActions, dllImports);
 
             // Edit QAction@dllImport
@@ -275,7 +312,30 @@
             return nugetAssemblyData;
         }
 
-        private static void ProcessLibAssemblies(BuildResultItems buildResultItems, HashSet<string> dllImports, NuGetPackageAssemblyData nugetAssemblyData)
+		private static NuGetPackageAssemblyData ProcessPackageReferencesViaAssets(Project project, ProjectAssetsProcessor projectAssetProcessor, BuildResultItems buildResultItems, HashSet<string> dllImports)
+		{
+            if (project.PackageReferences == null)
+            {
+                return null;
+            }
+
+            List<PackageIdentity> packageIdentities = GetPackageIdentities(project);
+
+            if (packageIdentities.Count <= 0)
+            {
+                return null;
+            }
+
+            NuGetPackageAssemblyData nugetAssemblyData = projectAssetProcessor.Process(project, project.TargetFrameworkMoniker,
+				Skyline.DataMiner.CICD.Common.NuGet.DevPackHelper.ProtocolDevPackNuGetDependenciesIncludingTransitive);
+
+			ProcessFrameworkAssemblies(dllImports, nugetAssemblyData);
+			ProcessLibAssemblies(buildResultItems, dllImports, nugetAssemblyData);
+
+			return nugetAssemblyData;
+		}
+
+		private static void ProcessLibAssemblies(BuildResultItems buildResultItems, HashSet<string> dllImports, NuGetPackageAssemblyData nugetAssemblyData)
         {
             ProcessDllImportNuGetAssemblyReferences(dllImports, nugetAssemblyData);
 
@@ -449,7 +509,7 @@
             }
         }
 
-        private static void ProcessReferences(Project project, PackageReferenceProcessor packageReferenceProcessor, ICompliancies compliancies,
+        private static void ProcessReferences(Project project, string nugetRootPath, ICompliancies compliancies,
             NuGetPackageAssemblyData nugetAssemblyData, string dllsFolder, HashSet<string> dllImports)
         {
             if (project.References != null)
@@ -464,7 +524,7 @@
                         continue;
                     }
 
-                    if (r.HintPath?.Contains(packageReferenceProcessor.NuGetRootPath) == true)
+                    if (r.HintPath?.Contains(nugetRootPath) == true)
                     {
                         // DLL is from a NuGet but is transitive from precompile or other project reference.
                         // These can be ignored.
