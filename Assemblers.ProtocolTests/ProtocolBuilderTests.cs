@@ -21,19 +21,6 @@
     public class ProtocolBuilderTests
     {
         [TestMethod]
-        public void TestProtocol()
-        {
-            var solutionFilePath = @"D:\TESTING\ConnectorSDKStyle\ConnectorSDKStyle.sln";
-            ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath);
-			ProtocolBuilder builder = new ProtocolBuilder(solution);
-
-            var buildResultItems = builder.Build();
-
-            File.WriteAllText(@"D:\TESTING\resultProtocol.xml", buildResultItems.Document);
-		}
-
-
-        [TestMethod]
         public void ProtocolCompiler_ProtocolBuilder_Basic()
         {
             string originalProtocol = @"<Protocol>
