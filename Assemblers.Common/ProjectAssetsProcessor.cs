@@ -4,19 +4,12 @@
 	using System.Collections.Generic;
 	using System.IO;
 	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
 
 	using NuGet.Common;
 	using NuGet.Configuration;
-	using NuGet.Frameworks;
 	using NuGet.Packaging;
-	using NuGet.Packaging.Core;
-	using NuGet.Packaging.Signing;
 	using NuGet.ProjectModel;
-	using NuGet.Protocol;
 	using NuGet.Protocol.Core.Types;
-	using NuGet.Versioning;
 
 	using Skyline.DataMiner.CICD.Common.NuGet;
 	using Skyline.DataMiner.CICD.FileSystem;
@@ -36,13 +29,6 @@
 		private readonly ILogger nuGetLogger;
 		private readonly ICollection<SourceRepository> repositories;
 
-		// V3 package path resolver
-		//private readonly VersionFolderPathResolver versionFolderPathResolver;
-
-		//private readonly FrameworkReducer frameworkReducer;
-
-		//private readonly SourceRepositoryProvider sourceRepositoryProvider;
-
 		private readonly IFileSystem _fileSystem = FileSystem.Instance;
 
 
@@ -57,20 +43,7 @@
 			// Start with the lowest settings. It will automatically look at the other NuGet.config files it can find on the default locations
 			settings = Settings.LoadDefaultSettings(root: solutionDirectoryPath);
 
-			//var provider = new PackageSourceProvider(settings);
-			//sourceRepositoryProvider = new SourceRepositoryProvider(provider, Repository.Provider.GetCoreV3());
-
 			NuGetRootPath = SettingsUtility.GetGlobalPackagesFolder(settings);
-
-			//// Add global packages to be the first repository as it speeds up everything when reading from disk then via internet.
-			//var repos = sourceRepositoryProvider.GetRepositories().ToList();
-			//repos.Insert(0, new SourceRepository(new PackageSource(NuGetRootPath), Repository.Provider.GetCoreV3()));
-			//repositories = repos;
-
-			//// https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
-			//versionFolderPathResolver = new VersionFolderPathResolver(NuGetRootPath);
-
-			//frameworkReducer = new FrameworkReducer();
 		}
 
 		/// <summary>
@@ -102,18 +75,6 @@
 		/// </summary>
 		/// <param name="project">The project to process.</param>
 		/// <param name="targetFrameworkMoniker">The target framework moniker.</param>
-		/// <returns>The assembly info of the processed packages.</returns>
-		/// <exception cref="InvalidOperationException">Cannot find the package with the identity.</exception>
-		public NuGetPackageAssemblyData ProcessAsync(Project project, string targetFrameworkMoniker)
-		{
-			return Process(project, targetFrameworkMoniker, new List<string>());
-		}
-
-		/// <summary>
-		/// Processes the NuGet packages.
-		/// </summary>
-		/// <param name="project">The project to process.</param>
-		/// <param name="targetFrameworkMoniker">The target framework moniker.</param>
 		/// <param name="defaultIncludedFilesNuGetPackages">Specifies the NuGet package IDs that are included by default.</param>
 		/// <returns>The assembly info of the processed packages.</returns>
 		/// <exception cref="InvalidOperationException">Cannot find the package with the identity.</exception>
@@ -121,18 +82,17 @@
 		{
 			var nugetPackageAssemblyData = new NuGetPackageAssemblyData();
 
-			var projectAssetsFilePath = Path.Combine(Path.GetDirectoryName(project.Path), "obj\\project.assets.json");
+			var projectAssetsFilePath = Path.Combine(Path.GetDirectoryName(project.Path), "obj", "project.assets.json");
 
 			if(!File.Exists(projectAssetsFilePath))
 			{
-				throw new InvalidOperationException("project.assets.json file not found. Make sure to perform a restore of the project.");
+				// Projects that do not use any NuGet packages and do not reference any project that uses NuGet packages will not have a project.assets.json file.
+				return nugetPackageAssemblyData;
 			}
 
 			var lockFileFormat = new LockFileFormat();
 			var assetsFileContent = File.ReadAllText(projectAssetsFilePath);
 			var assetsFile = lockFileFormat.Parse(assetsFileContent, "In Memory");
-
-			var targetCount = assetsFile.Targets.Count;
 
 			var target = assetsFile.Targets.FirstOrDefault(t => t.Name == targetFrameworkMoniker);
 
@@ -250,14 +210,9 @@
 			nugetPackageAssemblyData.DllImportFrameworkAssemblyReferences.AddRange(frameworkItems);
 		}
 
-		private static bool IsDevPackNuGetPackage(string packageId)
-		{
-			return DevPackHelper.DevPackNuGetPackages.Contains(packageId) || packageId.StartsWith(DevPackHelper.FilesPrefix);
-		}
-
 		private void LogDebug(string message)
 		{
-			logCollector?.ReportDebug($"PackageReferenceProcessor|{message}");
+			logCollector?.ReportDebug($"ProjectAssetsProcessor|{message}");
 		}
 	}
 }
