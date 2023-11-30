@@ -67,15 +67,68 @@
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ProtocolBuilder"/> class using the specified protocol solution.
+        /// </summary>
+        /// <param name="solution">The protocol solution.</param>
+        /// <param name="logCollector">The log collector.</param>
+        /// <param name="overrideVersion">Version that will be used to override the version in the protocol itself.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="solution"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="overrideVersion"/> is <see langword="null"/>, empty or whitespace.</exception>
+        public ProtocolBuilder(ProtocolSolution solution, ILogCollector logCollector, string overrideVersion)
+            : this(solution, logCollector)
+        {
+            if (String.IsNullOrWhiteSpace(overrideVersion))
+            {
+                throw new ArgumentException(nameof(overrideVersion));
+            }
+
+            var edit = new EditXml.XmlDocument(solution.ProtocolDocument);
+            var version = edit.Root.Element["Version"];
+            if (version == null)
+            {
+                throw new AssemblerException("Protocol does not contain a Version tag.");
+            }
+
+            version.InnerText = overrideVersion;
+
+            // Override the Document & Model as it now has the overridden version.
+            Document = XmlDocument.Parse(edit.GetXml());
+            Model = new ProtocolModel(Document);
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ProtocolBuilder"/> class using the specified document and projects.
         /// </summary>
         /// <param name="document">The protocol XML document.</param>
         /// <param name="projects">The project dictionary.</param>
+        /// <param name="overrideVersion">Version that will be used to override the version in the protocol itself.</param>
         /// <exception cref="ArgumentNullException"><paramref name="document"/>, or <paramref name="projects"/> is <see langword="null"/>.</exception>
-        internal ProtocolBuilder(XmlDocument document, IDictionary<string, Project> projects)
+        internal ProtocolBuilder(XmlDocument document, IDictionary<string, Project> projects, string overrideVersion = null)
         {
-            Document = document ?? throw new ArgumentNullException(nameof(document));
-            Model = new ProtocolModel(document);
+            if (document is null)
+            {
+                throw new ArgumentNullException(nameof(document));
+            }
+
+            if (!String.IsNullOrWhiteSpace(overrideVersion))
+            {
+                var edit = new EditXml.XmlDocument(document);
+                var version = edit.Root.Element["Version"];
+                if (version == null)
+                {
+                    throw new AssemblerException("Protocol does not contain a Version tag.");
+                }
+
+                version.InnerText = overrideVersion;
+
+                Document = XmlDocument.Parse(edit.GetXml());
+            }
+            else
+            {
+                Document = document;
+            }
+
+            Model = new ProtocolModel(Document);
             Projects = projects ?? throw new ArgumentNullException(nameof(projects));
         }
 
