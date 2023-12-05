@@ -730,5 +730,39 @@ namespace QAction_3
 
             Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
+        
+        [TestMethod]
+        public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion()
+        {
+	        string originalProtocol = @"<Protocol>
+	<Version>1.0.0.1</Version>
+</Protocol>";
+
+	        string expected = @"<Protocol>
+	<Version>1.0.0.1_DIS</Version>
+</Protocol>";
+
+	        var projects = new Dictionary<string, Project>(0);
+
+	        ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS");
+
+	        string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+
+	        Diff d = DiffBuilder.Compare(Input.FromString(expected))
+	                            .WithTest(Input.FromString(result)).Build();
+
+	        Assert.IsFalse(d.HasDifferences(), d.ToString());
+        }
+
+        [TestMethod]
+        public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion_MissingVersionTag()
+        {
+	        string originalProtocol = @"<Protocol>
+</Protocol>";
+            
+	        var projects = new Dictionary<string, Project>(0);
+
+            Assert.ThrowsException<AssemblerException>(() => new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS"));
+        }
     }
 }
