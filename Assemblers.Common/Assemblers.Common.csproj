@@ -39,7 +39,7 @@
 		<PackageReference Include="NuGet.PackageManagement" Version="6.6.1" />
 		<PackageReference Include="Skyline.DataMiner.CICD.Common" Version="1.0.4" />
 		<PackageReference Include="Skyline.DataMiner.CICD.Loggers" Version="1.0.3" />
-		<PackageReference Include="Skyline.DataMiner.CICD.Parsers.Common" Version="1.0.6" />
+		<PackageReference Include="Skyline.DataMiner.CICD.Parsers.Common" Version="1.0.7" />
 	</ItemGroup>
 
 </Project>

@@ -13,6 +13,6 @@ updates:
       mstest:
         patterns:
           - "MSTest.*"
-      skyline-cicd:
+      skyline-cicd-parsers:
         patterns:
-          - "Skyline.DataMiner.CICD.*"
+          - "Skyline.DataMiner.CICD.Parsers.*"

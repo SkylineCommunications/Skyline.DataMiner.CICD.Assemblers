@@ -27,7 +27,7 @@
     {
         private static readonly Regex RegexProjectPlaceholder = new Regex(@"\[Project:(?<projectName>.*)\]", RegexOptions.Compiled & RegexOptions.IgnoreCase);
         private static readonly string DotNetAssemblyPath = FileSystem.Instance.Path.GetDirectoryName(typeof(object).Assembly.Location);
-        
+
         private readonly IFileSystem _fileSystem = FileSystem.Instance;
         private readonly ILogCollector logCollector;
         private readonly string solutionDirectory;
@@ -41,7 +41,7 @@
         /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
         [Obsolete("Use the constructor with the solutionDirectory so it can take in account the NuGet.config from the solution.")]
         public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts)
-            : this(script,  projects, allScripts, solutionDirectory: null)
+            : this(script, projects, allScripts, solutionDirectory: null)
         {
         }
 
@@ -102,7 +102,7 @@
 
         private IDictionary<string, Project> Projects { get; }
 
-        private IEnumerable<Script> AllScripts { get;  }
+        private IEnumerable<Script> AllScripts { get; }
 
         /// <summary>
         /// Combines all the cs files in the project into a single string.
@@ -201,7 +201,7 @@
             {
                 nugetAssemblyData = await packageReferenceProcessor.ProcessAsync(packageIdentities, project.TargetFrameworkMoniker, DevPackHelper.AutomationDevPackNuGetDependenciesIncludingTransitive).ConfigureAwait(false);
                 LogDebug($"NuGetPackageAssemblyData: {nugetAssemblyData}");
-                
+
                 ProcessFrameworkAssemblies(editExe, nugetAssemblyData);
                 ProcessLibAssemblies(editExe, buildResultItems, nugetAssemblyData);
             }
@@ -425,7 +425,7 @@
             LogDebug($"ProcessReference|Add Param for {dll}");
             AddOrUpdateReferenceInExeBlock(_fileSystem, dll, editExe);
         }
-        
+
         private static void AddOrUpdateReferenceInExeBlock(IFileSystem fs, string dll, EditXml.XmlElement editExe)
         {
             if (HasDllImport(fs, editExe, dll, out var existing))
@@ -592,7 +592,7 @@
             }
         }
 
-        private (string scriptName, ScriptExe scriptExe)FindExeFromOtherScript(Project project, ProjectReference r)
+        private (string scriptName, ScriptExe scriptExe) FindExeFromOtherScript(Project project, ProjectReference r)
         {
             // Check if the exe block belongs to another script.
             foreach (var script in AllScripts)
@@ -652,7 +652,7 @@
             {
                 packageReferenceProcessor = new PackageReferenceProcessor(logCollector, solutionDirectory);
             }
-            
+
             BuildResultItems buildResultItems = new BuildResultItems();
 
             foreach (var exe in Model.ScriptExes)
