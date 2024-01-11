@@ -255,13 +255,12 @@ class Class1 {}]]>
 		<Exe id=""1"" type=""csharp"">
             <Value><![CDATA[using System;]]></Value>
             <Param type=""ref"">System.Data.dll</Param>
-            <Param type=""ref"">System.Runtime.Caching.dll</Param>
         </Exe>
 	</Script>
 </DMSScript>";
 
             var projectFiles = new[] { new ProjectFile("Script.cs", "using System;") };
-            var references = new[] { new Reference("System.Data.dll"), new Reference("System.Runtime.Caching.dll") };
+            var references = new[] { new Reference("System.Data.dll") };
             var project1 = new Project("Script_1", projectFiles: projectFiles, references: references);
 
             var projects = new Dictionary<string, Project>()

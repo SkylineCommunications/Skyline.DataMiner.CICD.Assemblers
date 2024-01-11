@@ -357,6 +357,7 @@ public class Script
             Assert.AreEqual(expectedResult, result[0].Value.Document);
         }
 
+        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution8_SrmAsync()
         {
@@ -409,7 +410,8 @@ public class Script
 
             generatedEntries.Should().BeEquivalentTo(expectedEntries);
         }
-        
+
+        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution9_SrmAsDependencyAsync()
         {

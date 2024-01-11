@@ -638,6 +638,7 @@ class Class1 {}]]>
             Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
 
+        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
         [TestMethod]
         public async Task ProtocolCompiler_Solution_Build()
         {
