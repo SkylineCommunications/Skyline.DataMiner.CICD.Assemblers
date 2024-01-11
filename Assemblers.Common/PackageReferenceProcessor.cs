@@ -159,12 +159,12 @@
                     }
 
                     filteredProjectPackages.Add(packageIdentity);
-
+                    
                     await AddPackagesAndDependenciesAsync(packageIdentity, cacheContext, nugetFramework, nuGetLogger, repositories, allDependenciesPackageInfos, cancellationToken).ConfigureAwait(false);
                 }
 
                 var unifiedPackages = GetResolvedPackages(sourceRepositoryProvider, nuGetLogger, filteredProjectPackages, allDependenciesPackageInfos);
-                
+
                 var references = ProcessPackages(unifiedPackages, allDependenciesPackageInfos, nugetFramework, defaultIncludedFilesNuGetPackages);
 
                 return references;
@@ -278,17 +278,20 @@
                             string fullPath = null;
                             string dllImportValue;
                             bool isFilePackage = false;
+                            bool dontAddToPackageToInstall = false;
 
                             if (resolvedPackage.Id.StartsWith(DevPackHelper.FilesPrefix))
                             {
                                 // Full path is not set as it should not be included.
                                 dllImportValue = assemblyName;
                                 isFilePackage = true;
+                                dontAddToPackageToInstall = true;
                             }
                             else if (NuGetHelper.CustomNuGetPackages.TryGetValue(resolvedPackage.Id, out (string Path, bool InDllImportDirectory) info))
                             {
                                 dllImportValue = info.Path;
                                 isFilePackage = !info.InDllImportDirectory;
+                                dontAddToPackageToInstall = true;
                             }
                             else
                             {
@@ -301,11 +304,13 @@
                             // Needs to be added as a reference in the dllImport attribute/script references.
                             nugetPackageAssemblies.DllImportNugetAssemblyReferences.Add(packageAssemblyReference);
 
-                            if (!resolvedPackage.Id.StartsWith(DevPackHelper.FilesPrefix))
+                            if (dontAddToPackageToInstall)
                             {
-                                // Needs to be provided in the package to install.
-                                nugetPackageAssemblies.NugetAssemblies.Add(packageAssemblyReference);
+                                // Should not be provided in the package to install.
+                                continue;
                             }
+                            
+                            nugetPackageAssemblies.NugetAssemblies.Add(packageAssemblyReference);
                         }
                     }
 
@@ -453,6 +458,28 @@
 
             if (NuGetHelper.SkipPackageDependencies(package.Id))
             {
+                // Add it to the allPackages as the PackageResolver later on needs it (in case there would be multiple versions).
+                SourceRepository packageSourceRepository = null;
+                foreach (var sourceRepository in repositories)
+                {
+                    FindPackageByIdResource findPackageResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
+                    var exists = await findPackageResource.DoesPackageExistAsync(package.Id, package.Version, cacheContext, nuGetLogger, cancellationToken).ConfigureAwait(false);
+
+                    if (exists)
+                    {
+                        packageSourceRepository = sourceRepository;
+                        break;
+                    }
+                }
+
+                if (packageSourceRepository == null)
+                {
+                    logCollector?.ReportError($"PackageReferenceProcessor|InstallPackageIfNotFound|Unable to find package '{package.Id}' with version '{package.Version}");
+                    return;
+                }
+
+                allPackages.Add(new SourcePackageDependencyInfo(package.Id, package.Version, Array.Empty<PackageDependency>(), true,
+                    packageSourceRepository));
                 return;
             }
 
