@@ -24,6 +24,8 @@
         [TestMethod]
         [DataRow("[Project:SVD-1_2]", "SVD-1_2")]
         [DataRow("[Project:TV2D-SRM-LSO.Satellite Downlink [DVB-S2.S2X]_63000]", "TV2D-SRM-LSO.Satellite Downlink [DVB-S2.S2X]_63000")]
+        [DataRow("", null)]
+        [DataRow(null, null)]
         public void SLDisCompiler_AutomationScriptBuilder_TryFindProjectPlaceholder(string text, string expectedOutput)
         {
             // Act
