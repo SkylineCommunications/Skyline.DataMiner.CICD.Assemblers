@@ -638,6 +638,7 @@ class Class1 {}]]>
             Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
 
+        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
         [TestMethod]
         public async Task ProtocolCompiler_Solution_Build()
         {
@@ -684,7 +685,7 @@ class Class1 {}]]>
 }
 ]]>
 		</QAction>
-		<QAction id=""3"" name=""QA3"" encoding=""csharp"" triggers=""3"" dllImport=""[ProtocolName].[ProtocolVersion].QAction.63000.dll"">
+		<QAction id=""3"" name=""QA3"" encoding=""csharp"" triggers=""3"" dllImport=""Microsoft.CSharp.dll;System.Data.dll;System.Data.DataSetExtensions.dll;System.Drawing.dll;System.IO.Compression.FileSystem.dll;System.Runtime.Caching.dll;System.Runtime.Serialization.dll;System.Xml.Linq.dll;SRM\SLSRMLibrary.dll;[ProtocolName].[ProtocolVersion].QAction.63000.dll"">
 			<![CDATA[
 //---------------------------------
 // QAction_3.cs

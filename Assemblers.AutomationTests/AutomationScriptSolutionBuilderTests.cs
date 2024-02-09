@@ -356,5 +356,114 @@ public class Script
             Assert.AreEqual(1, result.Count);
             Assert.AreEqual(expectedResult, result[0].Value.Document);
         }
+
+        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
+        [TestMethod]
+        public async Task AutomationScriptCompilerUsingNuGetPackages_Solution8_SrmAsync()
+        {
+            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution8"));
+            var path = Path.Combine(dir, "Solution8.sln");
+
+            var solution = AutomationScriptSolution.Load(path);
+            var builder = new AutomationScriptSolutionBuilder(solution);
+
+            var result = await builder.BuildAsync().ConfigureAwait(false);
+
+            Assert.AreEqual(1, result.Count, "Expected 1 script in build result.");
+
+            var firstItem = result.FirstOrDefault();
+            string automationScriptXml = firstItem.Value.Document;
+
+            var document = XDocument.Parse(automationScriptXml);
+            XNamespace ns = document.Root.GetDefaultNamespace();
+
+            var referenceNodes = document
+                ?.Element(ns + "DMSScript")
+                ?.Element(ns + "Script")
+                ?.Element(ns + "Exe")
+                ?.Elements(ns + "Param");
+
+            Assert.IsNotNull(referenceNodes);
+
+            List<string> generatedEntries = new List<string>();
+            foreach (var referenceNode in referenceNodes)
+            {
+                generatedEntries.Add(referenceNode.Value);
+            }
+
+            List<string> expectedEntries = new List<string>
+            {
+                @"Microsoft.CSharp.dll",
+                @"System.Data.dll",
+                @"System.Data.DataSetExtensions.dll",
+                @"System.Drawing.dll",
+                @"System.IO.Compression.FileSystem.dll",
+                @"System.Runtime.Caching.dll",
+                @"System.Runtime.Serialization.dll",
+                @"System.Xml.Linq.dll",
+
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\SLSRMLibrary.dll",
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\SLDijkstraSearch.dll",
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\Skyline.DataMiner.Core.SRM.Utils.IAS.dll"
+            };
+
+            generatedEntries.Should().BeEquivalentTo(expectedEntries);
+        }
+
+        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
+        [TestMethod]
+        public async Task AutomationScriptCompilerUsingNuGetPackages_Solution9_SrmAsDependencyAsync()
+        {
+            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution9"));
+            var path = Path.Combine(dir, "Solution9.sln");
+
+            var solution = AutomationScriptSolution.Load(path);
+            var builder = new AutomationScriptSolutionBuilder(solution);
+
+            var result = await builder.BuildAsync().ConfigureAwait(false);
+
+            Assert.AreEqual(1, result.Count, "Expected 1 script in build result.");
+
+            var firstItem = result.FirstOrDefault();
+            string automationScriptXml = firstItem.Value.Document;
+
+            var document = XDocument.Parse(automationScriptXml);
+            XNamespace ns = document.Root.GetDefaultNamespace();
+
+            var referenceNodes = document
+                ?.Element(ns + "DMSScript")
+                ?.Element(ns + "Script")
+                ?.Element(ns + "Exe")
+                ?.Elements(ns + "Param");
+
+            Assert.IsNotNull(referenceNodes);
+
+            List<string> generatedEntries = new List<string>();
+            foreach (var referenceNode in referenceNodes)
+            {
+                generatedEntries.Add(referenceNode.Value);
+            }
+
+            List<string> expectedEntries = new List<string>
+            {
+                @"Microsoft.CSharp.dll",
+                @"System.Data.dll",
+                @"System.Data.DataSetExtensions.dll",
+                @"System.Drawing.dll",
+                @"System.IO.Compression.FileSystem.dll",
+                @"System.Runtime.Caching.dll",
+                @"System.Runtime.Serialization.dll",
+                @"System.Xml.Linq.dll",
+
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\SLSRMLibrary.dll",
+
+                // This one has a dependency on SRM package
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\skyline.dataminer.testing.mod\1.0.0-1.0.0.x.3\lib\net462\Skyline.DataMiner.Testing.MOD.dll",
+            };
+
+            generatedEntries.Should().BeEquivalentTo(expectedEntries);
+        }
     }
 }

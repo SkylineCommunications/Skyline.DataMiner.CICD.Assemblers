@@ -140,7 +140,7 @@
             {
                 cacheContext.MaxAge = DateTimeOffset.UtcNow;
 
-                var filteredAllPackages = new HashSet<SourcePackageDependencyInfo>(PackageIdentityComparer.Default);
+                var allDependenciesPackageInfos = new HashSet<SourcePackageDependencyInfo>(PackageIdentityComparer.Default);
 
                 var filteredProjectPackages = new List<PackageIdentity>();
                 foreach (var projectPackage in projectPackages)
@@ -159,21 +159,16 @@
                     }
 
                     filteredProjectPackages.Add(packageIdentity);
-
-                    await AddPackagesAndDependenciesAsync(packageIdentity, cacheContext, nugetFramework, nuGetLogger, repositories, filteredAllPackages, cancellationToken).ConfigureAwait(false);
+                    
+                    await AddPackagesAndDependenciesAsync(packageIdentity, cacheContext, nugetFramework, nuGetLogger, repositories, allDependenciesPackageInfos, cancellationToken).ConfigureAwait(false);
                 }
 
-                var unifiedPackages = GetResolvedPackages(sourceRepositoryProvider, nuGetLogger, filteredProjectPackages, filteredAllPackages);
+                var unifiedPackages = GetResolvedPackages(sourceRepositoryProvider, nuGetLogger, filteredProjectPackages, allDependenciesPackageInfos);
 
-                var references = ProcessPackages(unifiedPackages, filteredAllPackages, nugetFramework, defaultIncludedFilesNuGetPackages);
+                var references = ProcessPackages(unifiedPackages, allDependenciesPackageInfos, nugetFramework, defaultIncludedFilesNuGetPackages);
 
                 return references;
             }
-        }
-
-        private static bool IsDevPackNuGetPackage(string packageId)
-        {
-            return DevPackHelper.DevPackNuGetPackages.Contains(packageId) || packageId.StartsWith(DevPackHelper.FilesPrefix);
         }
 
         /// <summary>
@@ -184,13 +179,14 @@
         /// <param name="extensions">The NuGet packages.</param>
         /// <param name="allPackagesAndDependencies">All top level packages and their dependencies.</param>
         /// <returns>The resolved NuGet packages.</returns>
-        private static IEnumerable<SourcePackageDependencyInfo> GetResolvedPackages(ISourceRepositoryProvider sourceRepositoryProvider,
+        private static IEnumerable<PackageIdentity> GetResolvedPackages(ISourceRepositoryProvider sourceRepositoryProvider,
                                                                               ILogger logger, IList<PackageIdentity> extensions,
                                                                               HashSet<SourcePackageDependencyInfo> allPackagesAndDependencies)
         {
             if (allPackagesAndDependencies.Count == 0)
             {
-                return Array.Empty<SourcePackageDependencyInfo>();
+                // If no dependencies, then return the main package(s) at least.
+                return extensions;
             }
 
             // Create a package resolver context (this is used to help figure out which actual package versions to install).
@@ -207,13 +203,13 @@
             var resolver = new PackageResolver();
 
             // Work out the actual set of packages to install.
-            var packagesToInstall = resolver.Resolve(resolverContext, CancellationToken.None)
-                                            .Select(identity => allPackagesAndDependencies.Single(info => PackageIdentityComparer.Default.Equals(info, identity)));
+            IEnumerable<PackageIdentity> packagesToInstall = resolver.Resolve(resolverContext, CancellationToken.None)
+                                                                                 .Select(identity => allPackagesAndDependencies.Single(info => PackageIdentityComparer.Default.Equals(info, identity)));
 
             return packagesToInstall;
         }
 
-        private NuGetPackageAssemblyData ProcessPackages(IEnumerable<SourcePackageDependencyInfo> resolvedPackages, HashSet<SourcePackageDependencyInfo> filteredAllPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
+        private NuGetPackageAssemblyData ProcessPackages(IEnumerable<PackageIdentity> resolvedPackages, HashSet<SourcePackageDependencyInfo> filteredAllPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
         {
             var nugetPackageAssemblies = new NuGetPackageAssemblyData();
 
@@ -241,7 +237,7 @@
         /// <param name="processedPackages">The processed packages.</param>
         /// <param name="nugetFramework">The NuGet framework.</param>
         /// <param name="defaultIncludedFilesNuGetPackages">The default NuGet "Skyline.DataMiner.Files." NuGet packages that are already referenced by default.</param>
-        private void ProcessResolvedPackages(IEnumerable<SourcePackageDependencyInfo> resolvedPackages, NuGetPackageAssemblyData nugetPackageAssemblies, ISet<string> processedPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
+        private void ProcessResolvedPackages(IEnumerable<PackageIdentity> resolvedPackages, NuGetPackageAssemblyData nugetPackageAssemblies, ISet<string> processedPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
         {
             // For all assemblies in the resolved package list we provide the reference to the assembly.
             foreach (var resolvedPackage in resolvedPackages)
@@ -251,7 +247,7 @@
 
                 using (PackageReaderBase packageReader = GetPackageReader(resolvedPackage))
                 {
-                    if (packageReader.GetDevelopmentDependency() || (IsDevPackNuGetPackage(resolvedPackage.Id) && defaultIncludedFilesNuGetPackages.Contains(resolvedPackage.Id)))
+                    if (packageReader.GetDevelopmentDependency() || (NuGetHelper.IsDevPackNuGetPackage(resolvedPackage.Id) && defaultIncludedFilesNuGetPackages.Contains(resolvedPackage.Id)))
                     {
                         continue;
                     }
@@ -282,12 +278,20 @@
                             string fullPath = null;
                             string dllImportValue;
                             bool isFilePackage = false;
+                            bool dontAddToPackageToInstall = false;
 
                             if (resolvedPackage.Id.StartsWith(DevPackHelper.FilesPrefix))
                             {
                                 // Full path is not set as it should not be included.
                                 dllImportValue = assemblyName;
                                 isFilePackage = true;
+                                dontAddToPackageToInstall = true;
+                            }
+                            else if (NuGetHelper.CustomNuGetPackages.TryGetValue(resolvedPackage.Id, out (string Path, bool InDllImportDirectory) info))
+                            {
+                                dllImportValue = info.Path;
+                                isFilePackage = !info.InDllImportDirectory;
+                                dontAddToPackageToInstall = true;
                             }
                             else
                             {
@@ -300,11 +304,13 @@
                             // Needs to be added as a reference in the dllImport attribute/script references.
                             nugetPackageAssemblies.DllImportNugetAssemblyReferences.Add(packageAssemblyReference);
 
-                            if (!resolvedPackage.Id.StartsWith(DevPackHelper.FilesPrefix))
+                            if (dontAddToPackageToInstall)
                             {
-                                // Needs to be provided in the package to install.
-                                nugetPackageAssemblies.NugetAssemblies.Add(packageAssemblyReference);
+                                // Should not be provided in the package to install.
+                                continue;
                             }
+                            
+                            nugetPackageAssemblies.NugetAssemblies.Add(packageAssemblyReference);
                         }
                     }
 
@@ -345,7 +351,7 @@
 
                 using (PackageReaderBase packageReader = GetPackageReader(packageToInstall))
                 {
-                    if (packageReader.GetDevelopmentDependency() || IsDevPackNuGetPackage(packageToInstall.Id))
+                    if (packageReader.GetDevelopmentDependency() || NuGetHelper.IsDevPackNuGetPackage(packageToInstall.Id))
                     {
                         continue;
                     }
@@ -447,8 +453,35 @@
                 // Package was already processed.
                 return;
             }
-
+            
             await InstallPackageIfNotFound(package, cacheContext, cancellationToken);
+
+            if (NuGetHelper.SkipPackageDependencies(package.Id))
+            {
+                // Add it to the allPackages as the PackageResolver later on needs it (in case there would be multiple versions).
+                SourceRepository packageSourceRepository = null;
+                foreach (var sourceRepository in repositories)
+                {
+                    FindPackageByIdResource findPackageResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(cancellationToken).ConfigureAwait(false);
+                    var exists = await findPackageResource.DoesPackageExistAsync(package.Id, package.Version, cacheContext, nuGetLogger, cancellationToken).ConfigureAwait(false);
+
+                    if (exists)
+                    {
+                        packageSourceRepository = sourceRepository;
+                        break;
+                    }
+                }
+
+                if (packageSourceRepository == null)
+                {
+                    logCollector?.ReportError($"PackageReferenceProcessor|InstallPackageIfNotFound|Unable to find package '{package.Id}' with version '{package.Version}");
+                    return;
+                }
+
+                allPackages.Add(new SourcePackageDependencyInfo(package.Id, package.Version, Array.Empty<PackageDependency>(), true,
+                    packageSourceRepository));
+                return;
+            }
 
             foreach (var sourceRepository in repositories)
             {
@@ -471,7 +504,7 @@
                     continue;
                 }
 
-                var filteredDependencyInfo = dependencyInfo.Dependencies.Where(d => !IsDevPackNuGetPackage(d.Id));
+                var filteredDependencyInfo = dependencyInfo.Dependencies.Where(d => !NuGetHelper.IsDevPackNuGetPackage(d.Id));
 
                 var filteredDependencies = new SourcePackageDependencyInfo(dependencyInfo.Id, dependencyInfo.Version, filteredDependencyInfo, dependencyInfo.Listed, dependencyInfo.Source);
 
@@ -485,7 +518,7 @@
                         break;
                     }
 
-                    if (IsDevPackNuGetPackage(dependency.Id))
+                    if (NuGetHelper.IsDevPackNuGetPackage(dependency.Id))
                     {
                         continue;
                     }

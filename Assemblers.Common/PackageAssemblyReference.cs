@@ -21,6 +21,7 @@
         /// </summary>
         /// <param name="dllImport">The import value for the QAction@dllImport attribute or Exe/Param element.</param>
         /// <param name="assemblyPath">The assembly fle path.</param>
+        /// <param name="isFilesPackage">Determine if this is a package of the Files folder.</param>
         public PackageAssemblyReference(string dllImport, string assemblyPath, bool isFilesPackage) : this(dllImport, assemblyPath)
         {
             IsFilesPackage = isFilesPackage;
