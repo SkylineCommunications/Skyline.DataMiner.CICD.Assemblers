@@ -49,7 +49,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Skyline.DataMiner.CICD.Parsers.Automation" Version="1.0.8" />
+		<PackageReference Include="Skyline.DataMiner.CICD.Parsers.Automation" Version="1.0.10" />
 	</ItemGroup>
 
 </Project>
