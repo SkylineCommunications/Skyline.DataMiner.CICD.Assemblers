@@ -49,11 +49,13 @@
             // dllImports needs priority
             dllImports.Should().Contain("System.Net.Http.dll");
             // buildResultItems should not have system.net.http
+            // dllImports should not have duplicate system.net.http
+            dllImports.Should().NotContain("system.net.http\\4.3.4\\lib\\net46\\System.Net.Http.dll");
             var unexpectedPackageReference = new PackageAssemblyReference("system.net.http\\4.3.4\\lib\\net46\\System.Net.Http.dll", "c:\\pfpr\\system.net.http\\4.3.4\\lib\\net46\\System.Net.Http.dll", false);
             buildResultItems.Assemblies.Should().NotContainEquivalentOf<PackageAssemblyReference>(unexpectedPackageReference);
 
             // Best effort to save time.
-            dllImports.Count.Should().Be(26);
+            dllImports.Count.Should().Be(25);
             buildResultItems.Assemblies.Count.Should().Be(22);
         }
     }

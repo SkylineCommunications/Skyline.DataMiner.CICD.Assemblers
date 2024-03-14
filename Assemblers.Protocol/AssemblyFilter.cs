@@ -62,6 +62,16 @@
             }
         }
 
+        private static void AddToDllImport(HashSet<string> dllImports, string newImport)
+        {
+            // Only add a dll import that is not the same name of the dll. This avoids duplicates.
+
+            if (!dllImports.Select(p => Path.GetFileName(p)).Contains(Path.GetFileName(newImport)))
+            {
+                dllImports.Add(newImport);
+            }
+        }
+
         private static void ProcessDllImportNuGetAssemblyReferences(HashSet<string> dllImports, NuGetPackageAssemblyData nugetAssemblyData)
         {
             if (nugetAssemblyData.DllImportNugetAssemblyReferences.Count <= 0)
@@ -98,7 +108,7 @@
                 {
                     var libItem = packagesContainingAssembly[0];
 
-                    dllImports.Add(libItem.DllImport);
+                    AddToDllImport(dllImports, libItem.DllImport);
                     directoriesWithExplicitDllImport.Add(libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Length));
                 }
                 else
@@ -123,7 +133,7 @@
                         continue;
                     }
 
-                    dllImports.Add(selectedItem.DllImport);
+                    AddToDllImport(dllImports, selectedItem.DllImport);
                     directoriesWithExplicitDllImport.Add(selectedItem.DllImport.Substring(0,
                         selectedItem.DllImport.Length - assembly.Length));
 
