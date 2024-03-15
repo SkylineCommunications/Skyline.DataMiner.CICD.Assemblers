@@ -1,14 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
-using Skyline.DataMiner.CICD.Assemblers.Common;
-using NuGet.Packaging.Core;
-
-namespace Skyline.DataMiner.CICD.Assemblers.Protocol
+﻿namespace Skyline.DataMiner.CICD.Assemblers.Protocol
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Threading.Tasks;
+    using Skyline.DataMiner.CICD.Assemblers.Common;
+    using NuGet.Packaging.Core;
+
     /// <summary>
     /// Provides functionality to filter assemblies based on target framework, package references, and build result items.
     /// </summary>
@@ -41,7 +41,7 @@ namespace Skyline.DataMiner.CICD.Assemblers.Protocol
         /// <param name="newImport">The new import to add.</param>
         private static void AddToDllImport(HashSet<string> dllImports, string newImport)
         {
-            if (!dllImports.Select(p => Path.GetFileName(p)).Contains(Path.GetFileName(newImport)))
+            if (!dllImports.Select(Path.GetFileName).Contains(Path.GetFileName(newImport)))
             {
                 dllImports.Add(newImport);
             }
@@ -90,18 +90,20 @@ namespace Skyline.DataMiner.CICD.Assemblers.Protocol
                 else
                 {
                     PackageAssemblyReference mostRecentLibItem = SelectMostRecentVersion(packagesContainingAssembly);
-                    if (mostRecentLibItem != null)
+                    if (mostRecentLibItem == null)
                     {
-                        AddToDllImport(dllImports, mostRecentLibItem.DllImport);
-                        directoriesWithExplicitDllImport.Add(mostRecentLibItem.DllImport.Substring(0, mostRecentLibItem.DllImport.Length - assembly.Key.Length));
+                        continue;
+                    }
 
-                        foreach (var libItem in packagesContainingAssembly)
+                    AddToDllImport(dllImports, mostRecentLibItem.DllImport);
+                    directoriesWithExplicitDllImport.Add(mostRecentLibItem.DllImport.Substring(0, mostRecentLibItem.DllImport.Length - assembly.Key.Length));
+
+                    foreach (var libItem in packagesContainingAssembly)
+                    {
+                        if (libItem != mostRecentLibItem)
                         {
-                            if (libItem != mostRecentLibItem)
-                            {
-                                string directoryPath = libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Key.Length);
-                                potentialRemainingDirectoryImports.Add(directoryPath);
-                            }
+                            string directoryPath = libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Key.Length);
+                            potentialRemainingDirectoryImports.Add(directoryPath);
                         }
                     }
                 }
@@ -125,7 +127,7 @@ namespace Skyline.DataMiner.CICD.Assemblers.Protocol
         {
             foreach (var frameworkAssembly in nugetAssemblyData.DllImportFrameworkAssemblyReferences)
             {
-                if (!Helper.QActionDefaultImportDLLs.Any(a => string.Equals(a, frameworkAssembly, StringComparison.OrdinalIgnoreCase)))
+                if (!Helper.QActionDefaultImportDLLs.Any(a => String.Equals(a, frameworkAssembly, StringComparison.OrdinalIgnoreCase)))
                 {
                     dllImports.Add(frameworkAssembly);
                 }
@@ -144,7 +146,7 @@ namespace Skyline.DataMiner.CICD.Assemblers.Protocol
 
             foreach (var dir in nugetAssemblyData.DllImportDirectoryReferences)
             {
-                if (!Helper.QActionDefaultImportDLLs.Any(d => string.Equals(d, dir, StringComparison.OrdinalIgnoreCase)))
+                if (!Helper.QActionDefaultImportDLLs.Any(d => String.Equals(d, dir, StringComparison.OrdinalIgnoreCase)))
                 {
                     dllImports.Add(dir);
                 }

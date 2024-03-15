@@ -1,5 +1,6 @@
-﻿namespace Skyline.DataMiner.CICD.Assemblers.Protocol.Tests
+﻿namespace Assemblers.ProtocolTests
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@
     using Skyline.DataMiner.CICD.Assemblers.Common;
     using Skyline.DataMiner.CICD.Assemblers.Protocol;
 
-    [TestClass()]
+    [TestClass]
     public class AssemblyFilterTests
     {
         [TestMethod]
@@ -40,7 +41,7 @@
             // Make sure there is only one System.Net.Http.dll
             // NuGetAssemblies and NetFramework cannot both have System.Net.Http which causes incorrect behavior down the line.
             // BuildResultItems
-            //  AssemblyPath: c:\pfpr\system.net.http\4.3.4\lib\net46\System.Net.Http.dll
+            //  AssemblyPath: c:\Users\{user}\.nuget\packages\system.net.http\4.3.4\lib\net46\System.Net.Http.dll
             //  dllImports: system.net.http\4.3.4\lib\net46\System.Net.Http.dll
             // dllImports hashset:
             //  System.Net.Http.dll
@@ -50,9 +51,9 @@
             dllImports.Should().Contain("System.Net.Http.dll");
             // buildResultItems should not have system.net.http
             // dllImports should not have duplicate system.net.http
-            dllImports.Should().NotContain("system.net.http\\4.3.4\\lib\\net46\\System.Net.Http.dll");
-            var unexpectedPackageReference = new PackageAssemblyReference("system.net.http\\4.3.4\\lib\\net46\\System.Net.Http.dll", "c:\\pfpr\\system.net.http\\4.3.4\\lib\\net46\\System.Net.Http.dll", false);
-            buildResultItems.Assemblies.Should().NotContainEquivalentOf<PackageAssemblyReference>(unexpectedPackageReference);
+            dllImports.Should().NotContain(@"system.net.http\4.3.4\lib\net46\System.Net.Http.dll");
+            var unexpectedPackageReference = new PackageAssemblyReference(@"system.net.http\4.3.4\lib\net46\System.Net.Http.dll", String.Empty, false);
+            buildResultItems.Assemblies.Should().NotContainEquivalentOf(unexpectedPackageReference, options => options.Excluding(reference => reference.AssemblyPath));
 
             // Best effort to save time.
             dllImports.Count.Should().Be(25);
