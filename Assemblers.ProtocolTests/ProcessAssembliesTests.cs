@@ -35,7 +35,7 @@
             HashSet<string> dllImports = new HashSet<string>();
 
             // Act
-            var result = await AssemblyFilter.Filter(targetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports, projectPackages);
+            var result = await AssemblyFilter.FilterAsync(targetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports, projectPackages);
 
             // Assert
             // Make sure there is only one System.Net.Http.dll
@@ -52,11 +52,15 @@
             // buildResultItems should not have system.net.http
             // dllImports should not have duplicate system.net.http
             dllImports.Should().NotContain(@"system.net.http\4.3.4\lib\net46\System.Net.Http.dll");
+
+            // dllImports should still have added the folder, in order to access other dll's from the same nuget
+            dllImports.Should().Contain(@"system.net.http\4.3.4\lib\net46\");
+
             var unexpectedPackageReference = new PackageAssemblyReference(@"system.net.http\4.3.4\lib\net46\System.Net.Http.dll", String.Empty, false);
             buildResultItems.Assemblies.Should().NotContainEquivalentOf(unexpectedPackageReference, options => options.Excluding(reference => reference.AssemblyPath));
 
             // Best effort to save time.
-            dllImports.Count.Should().Be(25);
+            dllImports.Count.Should().Be(26);
             buildResultItems.Assemblies.Count.Should().Be(22);
         }
     }

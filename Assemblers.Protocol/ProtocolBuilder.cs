@@ -319,7 +319,7 @@
                 return null;
             }
 
-            NuGetPackageAssemblyData nugetAssemblyData = await AssemblyFilter.Filter(project.TargetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports, packageIdentities).ConfigureAwait(false);
+            NuGetPackageAssemblyData nugetAssemblyData = await AssemblyFilter.FilterAsync(project.TargetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports, packageIdentities).ConfigureAwait(false);
 
             return nugetAssemblyData;
         }

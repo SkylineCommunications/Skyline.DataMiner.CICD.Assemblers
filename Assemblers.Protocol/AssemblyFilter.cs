@@ -39,12 +39,15 @@
         /// </summary>
         /// <param name="dllImports">A set of DLL imports.</param>
         /// <param name="newImport">The new import to add.</param>
-        private static void AddToDllImport(HashSet<string> dllImports, string newImport)
+        private static bool AddToDllImport(HashSet<string> dllImports, string newImport)
         {
             if (!dllImports.Select(Path.GetFileName).Contains(Path.GetFileName(newImport)))
             {
                 dllImports.Add(newImport);
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -84,8 +87,14 @@
                 if (packagesContainingAssembly.Count == 1)
                 {
                     var libItem = packagesContainingAssembly[0];
-                    AddToDllImport(dllImports, libItem.DllImport);
-                    directoriesWithExplicitDllImport.Add(libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Key.Length));
+                    if (AddToDllImport(dllImports, libItem.DllImport))
+                    {
+                        directoriesWithExplicitDllImport.Add(libItem.DllImport.Substring(0, libItem.DllImport.Length - assembly.Key.Length));
+                    }
+                    else
+                    {
+                        potentialRemainingDirectoryImports.Add(Path.GetDirectoryName(libItem.DllImport) + "\\");
+                    }
                 }
                 else
                 {
@@ -95,8 +104,14 @@
                         continue;
                     }
 
-                    AddToDllImport(dllImports, mostRecentLibItem.DllImport);
-                    directoriesWithExplicitDllImport.Add(mostRecentLibItem.DllImport.Substring(0, mostRecentLibItem.DllImport.Length - assembly.Key.Length));
+                    if (AddToDllImport(dllImports, mostRecentLibItem.DllImport))
+                    {
+                        directoriesWithExplicitDllImport.Add(mostRecentLibItem.DllImport.Substring(0, mostRecentLibItem.DllImport.Length - assembly.Key.Length));
+                    }
+                    else
+                    {
+                        potentialRemainingDirectoryImports.Add(Path.GetDirectoryName(mostRecentLibItem.DllImport) + "\\");
+                    }
 
                     foreach (var libItem in packagesContainingAssembly)
                     {
