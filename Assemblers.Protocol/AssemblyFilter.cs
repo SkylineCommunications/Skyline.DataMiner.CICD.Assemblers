@@ -23,7 +23,7 @@
         /// <param name="dllImports">A set of DLL imports.</param>
         /// <param name="packageIdentities">A list of package identities.</param>
         /// <returns>The filtered NuGet package assembly data.</returns>
-        public static async Task<NuGetPackageAssemblyData> Filter(string targetFrameworkMoniker, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems, HashSet<string> dllImports, IList<PackageIdentity> packageIdentities)
+        public static async Task<NuGetPackageAssemblyData> FilterAsync(string targetFrameworkMoniker, PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems, HashSet<string> dllImports, IList<PackageIdentity> packageIdentities)
         {
             var nugetAssemblyData = await packageReferenceProcessor.ProcessAsync(packageIdentities, targetFrameworkMoniker,
                 Skyline.DataMiner.CICD.Common.NuGet.DevPackHelper.ProtocolDevPackNuGetDependenciesIncludingTransitive).ConfigureAwait(false);
