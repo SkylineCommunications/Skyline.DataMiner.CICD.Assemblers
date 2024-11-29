@@ -13,6 +13,7 @@
         public BuildResultItems()
         {
             Assemblies = new List<PackageAssemblyReference>();
+            DllAssemblies = new List<DllAssemblyReference>();
         }
 
         /// <summary>
@@ -28,7 +29,7 @@
         public ICollection<PackageAssemblyReference> Assemblies { get; }
 
         /// <summary>
-        /// Gets the assemblies of the used DLLs (non-NuGet packages)
+        /// Gets the assemblies of the used DLLs (non-NuGet packages).
         /// </summary>
         public ICollection<DllAssemblyReference> DllAssemblies { get; }
     }

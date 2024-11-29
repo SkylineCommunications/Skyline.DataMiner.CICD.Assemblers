@@ -426,9 +426,9 @@
                         dllImports.Add(dllName);
 
                         // If custom DLL
-                        if (r.HintPath != null)
+                        if (r.HintPath != null && project.ProjectStyle == ProjectStyle.Sdk)
                         {
-                            string dllPath = FileSystem.FileSystem.Instance.Path.GetFullPath(FileSystem.FileSystem.Instance.Path.Combine(project.Path, r.HintPath));
+                            string dllPath = FileSystem.FileSystem.Instance.Path.GetFullPath(FileSystem.FileSystem.Instance.Path.Combine(project.ProjectDirectory, r.HintPath));
 
                             buildResultItems.DllAssemblies.Add(new DllAssemblyReference(dllName, dllPath));
                         }
