@@ -26,5 +26,10 @@
         /// </summary>
         /// <value>The assemblies of the used NuGet packages.</value>
         public ICollection<PackageAssemblyReference> Assemblies { get; }
+
+        /// <summary>
+        /// Gets the assemblies of the used DLLs (non-NuGet packages)
+        /// </summary>
+        public ICollection<DllAssemblyReference> DllAssemblies { get; }
     }
 }

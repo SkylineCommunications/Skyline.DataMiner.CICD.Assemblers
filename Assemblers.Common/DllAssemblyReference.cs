@@ -1,28 +1,28 @@
 ﻿namespace Skyline.DataMiner.CICD.Assemblers.Common
 {
     /// <summary>
-    /// Represents an assembly reference of a NuGet package.
+    /// Represents an assembly reference of a local DLL.
     /// </summary>
-    public class PackageAssemblyReference
+    public class DllAssemblyReference
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="PackageAssemblyReference"/> class.
+        /// Initializes a new instance of the <see cref="DllAssemblyReference"/> class.
         /// </summary>
         /// <param name="dllImport">The import value for the QAction@dllImport attribute or Exe/Param element.</param>
         /// <param name="assemblyPath">The assembly file path.</param>
-        public PackageAssemblyReference(string dllImport, string assemblyPath)
+        public DllAssemblyReference(string dllImport, string assemblyPath)
         {
             DllImport = dllImport;
             AssemblyPath = assemblyPath;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PackageAssemblyReference"/> class.
+        /// Initializes a new instance of the <see cref="DllAssemblyReference"/> class.
         /// </summary>
         /// <param name="dllImport">The import value for the QAction@dllImport attribute or Exe/Param element.</param>
         /// <param name="assemblyPath">The assembly file path.</param>
         /// <param name="isFilesPackage">Determine if this is a package of the Files folder.</param>
-        public PackageAssemblyReference(string dllImport, string assemblyPath, bool isFilesPackage) : this(dllImport, assemblyPath)
+        public DllAssemblyReference(string dllImport, string assemblyPath, bool isFilesPackage) : this(dllImport, assemblyPath)
         {
             IsFilesPackage = isFilesPackage;
         }
@@ -34,7 +34,7 @@
         /// <remarks>
         /// <list type="bullet">
         /// <item>
-        /// <description>This is the value after C:\Skyline DataMiner\ProtocolScripts\DllImport\.</description>
+        /// <description>This is the value after C:\Skyline DataMiner\ProtocolScripts\.</description>
         /// </item>
         /// </list>
         /// </remarks>
@@ -47,7 +47,7 @@
         public string AssemblyPath { get; }
 
         /// <summary>
-        /// Defines if this references is a 'Skyline.DataMiner.Files' package.
+        /// Defines if this reference should be located in the Files a 'Skyline.DataMiner.Files' package.
         /// </summary>
         public bool IsFilesPackage { get; }
 

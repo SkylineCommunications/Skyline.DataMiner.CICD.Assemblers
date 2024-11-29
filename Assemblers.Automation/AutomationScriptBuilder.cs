@@ -31,7 +31,7 @@
 
         private readonly IFileSystem _fileSystem = FileSystem.Instance;
         private readonly ILogCollector logCollector;
-        private readonly string solutionDirectory;
+        private readonly string directoryForNuGetConfig;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AutomationScriptBuilder"/> class.
@@ -40,9 +40,9 @@
         /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
         /// <param name="allScripts">All the scripts in the Automation script solution.</param>
         /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
-        [Obsolete("Use the constructor with the solutionDirectory so it can take in account the NuGet.config from the solution.")]
+        [Obsolete("Use the constructor with the directoryForNuGetConfig so it can take in account the NuGet.config from the solution.")]
         public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts)
-            : this(script, projects, allScripts, solutionDirectory: null)
+            : this(script, projects, allScripts, directoryForNuGetConfig: null)
         {
         }
 
@@ -52,9 +52,9 @@
         /// <param name="script">The Automation script.</param>
         /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
         /// <param name="allScripts">All the scripts in the Automation script solution.</param>
-        /// <param name="solutionDirectory">Directory where the solution is located</param>
+        /// <param name="directoryForNuGetConfig">Directory where the solution is located</param>
         /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
-        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, string solutionDirectory)
+        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, string directoryForNuGetConfig)
         {
             Model = script ?? throw new ArgumentNullException(nameof(script));
             Document = script.Document;
@@ -63,7 +63,7 @@
             // ToList as it will be enumerated multiple times later on.
             AllScripts = allScripts.ToList();
 
-            this.solutionDirectory = solutionDirectory;
+            this.directoryForNuGetConfig = directoryForNuGetConfig;
         }
 
         /// <summary>
@@ -75,7 +75,7 @@
         /// <param name="logCollector">The log collector</param>
         /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="logCollector"/> is <see langword="null"/>.</exception>
-        [Obsolete("Use the constructor with the solutionDirectory so it can take in account the NuGet.config from the solution.")]
+        [Obsolete("Use the constructor with the directoryForNuGetConfig so it can take in account the NuGet.config from the solution.")]
         public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, ILogCollector logCollector)
             : this(script, projects, allScripts, logCollector, null)
         {
@@ -88,11 +88,11 @@
         /// <param name="projects">The projects corresponding with the C# Exe blocks.</param>
         /// <param name="allScripts">All the scripts in the Automation script solution.</param>
         /// <param name="logCollector">The log collector</param>
-        /// <param name="solutionDirectory">Directory where the solution is located</param>
+        /// <param name="directoryForNuGetConfig">Directory where the solution is located</param>
         /// <exception cref="ArgumentNullException"><paramref name="script"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="logCollector"/> is <see langword="null"/>.</exception>
-        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, ILogCollector logCollector, string solutionDirectory)
-            : this(script, projects, allScripts, solutionDirectory)
+        public AutomationScriptBuilder(Script script, IDictionary<string, Project> projects, IEnumerable<Script> allScripts, ILogCollector logCollector, string directoryForNuGetConfig)
+            : this(script, projects, allScripts, directoryForNuGetConfig)
         {
             this.logCollector = logCollector ?? throw new ArgumentNullException(nameof(logCollector));
         }
@@ -196,7 +196,7 @@
             // Add references from C# project.
             if (project.References != null)
             {
-                ProcessReferences(editExe, project, nugetAssemblyData, packageReferenceProcessor);
+                ProcessReferences(editExe, project, nugetAssemblyData, packageReferenceProcessor, buildResultItems);
             }
         }
 
@@ -395,43 +395,56 @@
             return assemblies;
         }
 
-        private void ProcessReferences(EditXml.XmlElement editExe, Project project, NuGetPackageAssemblyData nugetAssemblyData, PackageReferenceProcessor packageReferenceProcessor)
+        private void ProcessReferences(EditXml.XmlElement editExe, Project project, NuGetPackageAssemblyData nugetAssemblyData,
+            PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems)
         {
             foreach (var r in project.References)
             {
-                ProcessReference(r, editExe, nugetAssemblyData, packageReferenceProcessor);
+                ProcessReference(project, r, editExe, nugetAssemblyData, packageReferenceProcessor, buildResultItems);
             }
         }
 
-        private void ProcessReference(Reference r, EditXml.XmlElement editExe, NuGetPackageAssemblyData nugetAssemblyData, PackageReferenceProcessor packageReferenceProcessor)
+        private void ProcessReference(Project project, Reference r, EditXml.XmlElement editExe, NuGetPackageAssemblyData nugetAssemblyData,
+            PackageReferenceProcessor packageReferenceProcessor, BuildResultItems buildResultItems)
         {
-            var dll = r.GetDllName();
-            if (ScriptHelper.IsDefaultImportDll(dll) ||
-                (nugetAssemblyData != null && nugetAssemblyData.ProcessedAssemblies.Contains(dll)))
+            var dllName = r.GetDllName();
+            if (ScriptHelper.IsDefaultImportDll(dllName) ||
+                (nugetAssemblyData != null && nugetAssemblyData.ProcessedAssemblies.Contains(dllName)))
             {
                 return;
             }
 
+            string destinationPath = dllName;
+            bool isFiles = false;
             if (r.HintPath?.Contains(packageReferenceProcessor.NuGetRootPath) == true)
             {
                 // DLL is from a NuGet but is transitive from precompile or other project reference.
                 // These can be ignored.
             }
-            else if (ScriptHelper.NeedsFilesPath(dll))
+            else if (ScriptHelper.NeedsFilesPath(dllName))
             {
-                dll = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\Files", dll);
+                destinationPath = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\Files", dllName);
+                isFiles = true;
             }
-            else if (!NetFramework481ReferenceAssemblies.Contains(dll) && !_fileSystem.Path.IsPathRooted(dll))
+            else if (!NetFramework481ReferenceAssemblies.Contains(dllName) && !_fileSystem.Path.IsPathRooted(dllName))
             {
-                dll = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\ProtocolScripts", dll);
+                destinationPath = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\ProtocolScripts", dllName);
             }
             else
             {
                 // Do nothing.
             }
 
-            LogDebug($"ProcessReference|Add Param for {dll}");
-            AddOrUpdateReferenceInExeBlock(_fileSystem, dll, editExe);
+            LogDebug($"ProcessReference|Add Param for {destinationPath}");
+            AddOrUpdateReferenceInExeBlock(_fileSystem, destinationPath, editExe);
+
+            // If custom DLL
+            if (r.HintPath != null)
+            {
+                string dllPath = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(project.Path, r.HintPath));
+
+                buildResultItems.DllAssemblies.Add(new DllAssemblyReference(dllName, dllPath, isFiles));
+            }
         }
 
         private static void AddOrUpdateReferenceInExeBlock(IFileSystem fs, string dll, EditXml.XmlElement editExe)
@@ -654,11 +667,11 @@
             PackageReferenceProcessor packageReferenceProcessor;
             if (logCollector == null)
             {
-                packageReferenceProcessor = new PackageReferenceProcessor(solutionDirectory);
+                packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig);
             }
             else
             {
-                packageReferenceProcessor = new PackageReferenceProcessor(logCollector, solutionDirectory);
+                packageReferenceProcessor = new PackageReferenceProcessor(logCollector, directoryForNuGetConfig);
             }
 
             BuildResultItems buildResultItems = new BuildResultItems();

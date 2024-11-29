@@ -291,7 +291,7 @@
             }
 
             NuGetPackageAssemblyData nugetAssemblyData = await ProcessPackageReferences(project, packageReferenceProcessor, buildResultItems, dllImports);
-            ProcessReferences(project, packageReferenceProcessor, compliancies, nugetAssemblyData, dllsFolder, dllImports);
+            ProcessReferences(project, packageReferenceProcessor, compliancies, nugetAssemblyData, dllsFolder, dllImports, buildResultItems);
             ProcessProjectReferences(project, allQActions, dllImports);
 
             // Edit QAction@dllImport
@@ -380,7 +380,7 @@
         }
 
         private static void ProcessReferences(Project project, PackageReferenceProcessor packageReferenceProcessor, ICompliancies compliancies,
-            NuGetPackageAssemblyData nugetAssemblyData, string dllsFolder, HashSet<string> dllImports)
+            NuGetPackageAssemblyData nugetAssemblyData, string dllsFolder, HashSet<string> dllImports, BuildResultItems buildResultItems)
         {
             if (project.References != null)
             {
@@ -424,6 +424,14 @@
                         }
 
                         dllImports.Add(dllName);
+
+                        // If custom DLL
+                        if (r.HintPath != null)
+                        {
+                            string dllPath = FileSystem.FileSystem.Instance.Path.GetFullPath(FileSystem.FileSystem.Instance.Path.Combine(project.Path, r.HintPath));
+
+                            buildResultItems.DllAssemblies.Add(new DllAssemblyReference(dllName, dllPath));
+                        }
                     }
                 }
             }
