@@ -43,21 +43,21 @@
         /// <summary>
         /// Initializes a new instance of the <see cref="PackageReferenceProcessor"/> class.
         /// </summary>
-        [Obsolete("Use the constructor with the solution directory path to be able to read out the nuget.config from the solution.")]
-        public PackageReferenceProcessor() : this(solutionDirectoryPath: null)
+        [Obsolete("Use the constructor with the directory path to be able to read out the nuget.config.")]
+        public PackageReferenceProcessor() : this(directoryForNuGetConfig: null)
         {
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PackageReferenceProcessor"/> class.
         /// </summary>
-        /// <param name="solutionDirectoryPath">Directory path of the solution (to find the NuGet.config)</param>
-        public PackageReferenceProcessor(string solutionDirectoryPath)
+        /// <param name="directoryForNuGetConfig">Directory path (to find the NuGet.config)</param>
+        public PackageReferenceProcessor(string directoryForNuGetConfig)
         {
             nuGetLogger = NullLogger.Instance;
 
             // Start with the lowest settings. It will automatically look at the other NuGet.config files it can find on the default locations
-            settings = Settings.LoadDefaultSettings(root: solutionDirectoryPath);
+            settings = Settings.LoadDefaultSettings(root: directoryForNuGetConfig);
 
             var provider = new PackageSourceProvider(settings);
             sourceRepositoryProvider = new SourceRepositoryProvider(provider, Repository.Provider.GetCoreV3());
@@ -81,7 +81,7 @@
         /// <param name="logCollector">The log collector.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logCollector"/> is <see langword="null"/>.</exception>
         [Obsolete("Use the constructor with the solution directory path to be able to read out the nuget.config from the solution.")]
-        public PackageReferenceProcessor(ILogCollector logCollector) : this(logCollector, solutionDirectoryPath: null)
+        public PackageReferenceProcessor(ILogCollector logCollector) : this(logCollector, directoryForNuGetConfig: null)
         {
         }
 
@@ -89,9 +89,9 @@
         /// Initializes a new instance of the <see cref="PackageReferenceProcessor"/> class.
         /// </summary>
         /// <param name="logCollector">The log collector.</param>
-        /// <param name="solutionDirectoryPath">Directory path of the solution (to find the NuGet.config)</param>
+        /// <param name="directoryForNuGetConfig">Directory path (to find the NuGet.config)</param>
         /// <exception cref="ArgumentNullException"><paramref name="logCollector"/> is <see langword="null"/>.</exception>
-        public PackageReferenceProcessor(ILogCollector logCollector, string solutionDirectoryPath) : this(solutionDirectoryPath)
+        public PackageReferenceProcessor(ILogCollector logCollector, string directoryForNuGetConfig) : this(directoryForNuGetConfig)
         {
             this.logCollector = logCollector ?? throw new ArgumentNullException(nameof(logCollector));
 
