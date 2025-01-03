@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -165,7 +166,7 @@
 
                 var unifiedPackages = GetResolvedPackages(sourceRepositoryProvider, nuGetLogger, filteredProjectPackages, allDependenciesPackageInfos);
 
-                var references = ProcessPackages(unifiedPackages, allDependenciesPackageInfos, nugetFramework, defaultIncludedFilesNuGetPackages);
+                var references = await ProcessPackagesAsync(unifiedPackages, allDependenciesPackageInfos, nugetFramework, defaultIncludedFilesNuGetPackages);
 
                 return references;
             }
@@ -209,7 +210,7 @@
             return packagesToInstall;
         }
 
-        private NuGetPackageAssemblyData ProcessPackages(IEnumerable<PackageIdentity> resolvedPackages, HashSet<SourcePackageDependencyInfo> filteredAllPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
+        private async Task<NuGetPackageAssemblyData> ProcessPackagesAsync(IEnumerable<PackageIdentity> resolvedPackages, HashSet<SourcePackageDependencyInfo> filteredAllPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
         {
             var nugetPackageAssemblies = new NuGetPackageAssemblyData();
 
@@ -221,10 +222,10 @@
             HashSet<string> processedPackages = new HashSet<string>();
 
             // Resolved Packages are top level NuGet Packages
-            ProcessResolvedPackages(resolvedPackages, nugetPackageAssemblies, processedPackages, nugetFramework, defaultIncludedFilesNuGetPackages);
+            await ProcessResolvedPackagesAsync(resolvedPackages, nugetPackageAssemblies, processedPackages, nugetFramework, defaultIncludedFilesNuGetPackages);
 
             // Remaining Packages are Dependencies
-            ProcessRemainingPackages(filteredAllPackages, nugetPackageAssemblies, processedPackages, nugetFramework);
+            await ProcessRemainingPackagesAsync(filteredAllPackages, nugetPackageAssemblies, processedPackages, nugetFramework);
 
             return nugetPackageAssemblies;
         }
@@ -237,7 +238,7 @@
         /// <param name="processedPackages">The processed packages.</param>
         /// <param name="nugetFramework">The NuGet framework.</param>
         /// <param name="defaultIncludedFilesNuGetPackages">The default NuGet "Skyline.DataMiner.Files." NuGet packages that are already referenced by default.</param>
-        private void ProcessResolvedPackages(IEnumerable<PackageIdentity> resolvedPackages, NuGetPackageAssemblyData nugetPackageAssemblies, ISet<string> processedPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
+        private async Task ProcessResolvedPackagesAsync(IEnumerable<PackageIdentity> resolvedPackages, NuGetPackageAssemblyData nugetPackageAssemblies, ISet<string> processedPackages, NuGetFramework nugetFramework, IReadOnlyCollection<string> defaultIncludedFilesNuGetPackages)
         {
             // For all assemblies in the resolved package list we provide the reference to the assembly.
             foreach (var resolvedPackage in resolvedPackages)
@@ -253,11 +254,9 @@
                     }
 
                     var libItems = packageReader.GetLibItems().ToList();
+
                     var nearestLibItems = frameworkReducer.GetNearest(nugetFramework, libItems.Select(x => x.TargetFramework));
-                    var filteredLibItems = libItems.Where(x => x.TargetFramework.Equals(nearestLibItems))
-                                                   .SelectMany(x => x.Items)
-                                                   .Where(c => c.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                                                   .ToList();
+                    var filteredLibItems = await ExtractPrimaryAssembliesAsync(libItems, nearestLibItems, packageReader);
 
                     if (filteredLibItems.Any())
                     {
@@ -331,6 +330,53 @@
             }
         }
 
+        private async Task<IEnumerable<string>> ExtractPrimaryAssembliesAsync(List<FrameworkSpecificGroup> libItems, NuGetFramework nearestVersion, PackageReaderBase packageReader)
+        {
+            var filteredLibItems = new List<string>();
+            var nearestLibItems = libItems.Where(x => x.TargetFramework.Equals(nearestVersion)).FirstOrDefault();
+            var shortFolderName = nearestVersion.GetShortFolderName();
+
+            if (nearestLibItems != null)
+            {
+                foreach(var libItem in nearestLibItems.Items)
+                {
+                    if(!libItem.EndsWith(".dll"))
+                    {
+                        // Only process DLL files.
+                        continue;
+                    }
+
+                    string prefix = @"lib/" + shortFolderName + '/';
+
+                    if (libItem.StartsWith(prefix))
+                    {
+                        string subPath = libItem.Substring(prefix.Length);
+                        int subfolderNameIndex = subPath.IndexOf('/');
+
+                        if (subfolderNameIndex != -1)
+                        {
+                            string subfolderName = subPath.Substring(0, subfolderNameIndex);
+
+                            var satelliteAssemblies = await packageReader.GetSatelliteFilesAsync(subfolderName, CancellationToken.None);
+                            var satelliteAssembliesList = satelliteAssemblies.ToList();
+
+                            if (satelliteAssembliesList.ToList().Count == 0 || !satelliteAssembliesList.Contains(libItem))
+                            {
+                                filteredLibItems.Add(libItem);
+                            }
+                        }
+                        else
+                        {
+                            // Root item, cannot be a satellite assembly.
+                            filteredLibItems.Add(libItem);
+                        }
+                    }
+                }
+            }
+
+            return filteredLibItems;
+        }
+
         /// <summary>
         /// Processes the remaining packages skipping the ones that are already processes.
         /// </summary>
@@ -338,7 +384,7 @@
         /// <param name="nugetPackageAssemblies">The NuGet package assemblies.</param>
         /// <param name="processedPackages">The processed packages.</param>
         /// <param name="nugetFramework">The NuGet framework.</param>
-        private void ProcessRemainingPackages(HashSet<SourcePackageDependencyInfo> allPackages, NuGetPackageAssemblyData nugetPackageAssemblies, ICollection<string> processedPackages, NuGetFramework nugetFramework)
+        private async Task ProcessRemainingPackagesAsync(HashSet<SourcePackageDependencyInfo> allPackages, NuGetPackageAssemblyData nugetPackageAssemblies, ICollection<string> processedPackages, NuGetFramework nugetFramework)
         {
             // For all assemblies that are not in the resolved package list, we provide the folder where the assembly can be found.
             foreach (var packageToInstall in allPackages)
@@ -358,10 +404,7 @@
 
                     var libItems = packageReader.GetLibItems().ToList();
                     var nearestLibItems = frameworkReducer.GetNearest(nugetFramework, libItems.Select(x => x.TargetFramework));
-                    var filteredLibItems = libItems.Where(x => x.TargetFramework.Equals(nearestLibItems))
-                                                   .SelectMany(x => x.Items)
-                                                   .Where(c => c.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-                                                   .ToList();
+                    var filteredLibItems = await ExtractPrimaryAssembliesAsync(libItems, nearestLibItems, packageReader);
 
                     if (filteredLibItems.Any())
                     {
