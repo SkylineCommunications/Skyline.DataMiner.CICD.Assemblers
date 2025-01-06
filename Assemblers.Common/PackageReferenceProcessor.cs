@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -160,7 +159,7 @@
                     }
 
                     filteredProjectPackages.Add(packageIdentity);
-                    
+
                     await AddPackagesAndDependenciesAsync(packageIdentity, cacheContext, nugetFramework, nuGetLogger, repositories, allDependenciesPackageInfos, cancellationToken).ConfigureAwait(false);
                 }
 
@@ -308,7 +307,7 @@
                                 // Should not be provided in the package to install.
                                 continue;
                             }
-                            
+
                             nugetPackageAssemblies.NugetAssemblies.Add(packageAssemblyReference);
                         }
                     }
@@ -333,44 +332,51 @@
         private async Task<IEnumerable<string>> ExtractPrimaryAssembliesAsync(List<FrameworkSpecificGroup> libItems, NuGetFramework nearestVersion, PackageReaderBase packageReader)
         {
             var filteredLibItems = new List<string>();
-            var nearestLibItems = libItems.Where(x => x.TargetFramework.Equals(nearestVersion)).FirstOrDefault();
+            var nearestLibItems = libItems.FirstOrDefault(x => x.TargetFramework.Equals(nearestVersion));
             var shortFolderName = nearestVersion.GetShortFolderName();
 
-            if (nearestLibItems != null)
+            if (nearestLibItems == null)
             {
-                foreach(var libItem in nearestLibItems.Items)
+                return filteredLibItems;
+            }
+
+            foreach (var libItem in nearestLibItems.Items)
+            {
+                if (!libItem.EndsWith(".dll"))
                 {
-                    if(!libItem.EndsWith(".dll"))
+                    // Only process DLL files.
+                    continue;
+                }
+
+                string prefix = @"lib/" + shortFolderName + '/';
+
+                if (!libItem.StartsWith(prefix))
+                {
+                    continue;
+                }
+
+                string subPath = libItem.Substring(prefix.Length);
+                int subfolderNameIndex = subPath.IndexOf('/');
+
+                if (subfolderNameIndex != -1)
+                {
+                    string subfolderName = subPath.Substring(0, subfolderNameIndex);
+
+                    // Verify whether the assembly is a satellite assembly.
+                    // If it is a satellite assembly, do not include it.
+                    // For more info about satellite assemblies, refer to https://learn.microsoft.com/en-us/dotnet/core/extensions/create-satellite-assemblies.
+                    var satelliteAssemblies = await packageReader.GetSatelliteFilesAsync(subfolderName, CancellationToken.None);
+                    var satelliteAssembliesList = satelliteAssemblies.ToList();
+
+                    if (satelliteAssembliesList.ToList().Count == 0 || !satelliteAssembliesList.Contains(libItem))
                     {
-                        // Only process DLL files.
-                        continue;
+                        filteredLibItems.Add(libItem);
                     }
-
-                    string prefix = @"lib/" + shortFolderName + '/';
-
-                    if (libItem.StartsWith(prefix))
-                    {
-                        string subPath = libItem.Substring(prefix.Length);
-                        int subfolderNameIndex = subPath.IndexOf('/');
-
-                        if (subfolderNameIndex != -1)
-                        {
-                            string subfolderName = subPath.Substring(0, subfolderNameIndex);
-
-                            var satelliteAssemblies = await packageReader.GetSatelliteFilesAsync(subfolderName, CancellationToken.None);
-                            var satelliteAssembliesList = satelliteAssemblies.ToList();
-
-                            if (satelliteAssembliesList.ToList().Count == 0 || !satelliteAssembliesList.Contains(libItem))
-                            {
-                                filteredLibItems.Add(libItem);
-                            }
-                        }
-                        else
-                        {
-                            // Root item, cannot be a satellite assembly.
-                            filteredLibItems.Add(libItem);
-                        }
-                    }
+                }
+                else
+                {
+                    // Root item, cannot be a satellite assembly.
+                    filteredLibItems.Add(libItem);
                 }
             }
 
@@ -496,7 +502,7 @@
                 // Package was already processed.
                 return;
             }
-            
+
             await InstallPackageIfNotFound(package, cacheContext, cancellationToken);
 
             if (NuGetHelper.SkipPackageDependencies(package.Id))

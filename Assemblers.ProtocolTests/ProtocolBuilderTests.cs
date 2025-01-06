@@ -22,7 +22,7 @@
     public class ProtocolBuilderTests
     {
         [TestMethod]
-        public async Task ProtoclBuildTest()
+        public async Task ProtocolBuilder_BuildAsync_IgnoreSatelliteAssemblies()
         {
             var logCollector = new Logging(true);
 
@@ -752,37 +752,37 @@ namespace QAction_3
 
             Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
-        
+
         [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion()
         {
-	        string originalProtocol = @"<Protocol>
+            string originalProtocol = @"<Protocol>
 	<Version>1.0.0.1</Version>
 </Protocol>";
 
-	        string expected = @"<Protocol>
+            string expected = @"<Protocol>
 	<Version>1.0.0.1_DIS</Version>
 </Protocol>";
 
-	        var projects = new Dictionary<string, Project>(0);
+            var projects = new Dictionary<string, Project>(0);
 
-	        ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS");
+            ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS");
 
-	        string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
-	        Diff d = DiffBuilder.Compare(Input.FromString(expected))
-	                            .WithTest(Input.FromString(result)).Build();
+            Diff d = DiffBuilder.Compare(Input.FromString(expected))
+                                .WithTest(Input.FromString(result)).Build();
 
-	        Assert.IsFalse(d.HasDifferences(), d.ToString());
+            Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
 
         [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion_MissingVersionTag()
         {
-	        string originalProtocol = @"<Protocol>
+            string originalProtocol = @"<Protocol>
 </Protocol>";
-            
-	        var projects = new Dictionary<string, Project>(0);
+
+            var projects = new Dictionary<string, Project>(0);
 
             Assert.ThrowsException<AssemblerException>(() => new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS"));
         }
