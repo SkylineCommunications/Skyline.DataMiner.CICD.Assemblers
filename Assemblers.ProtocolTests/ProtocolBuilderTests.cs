@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
 
@@ -20,6 +21,26 @@
     [TestClass]
     public class ProtocolBuilderTests
     {
+        [TestMethod]
+        public async Task ProtocolBuilder_BuildAsync_IgnoreSatelliteAssemblies()
+        {
+            var logCollector = new Logging(true);
+
+            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Protocol\Solution2"));
+            var solutionFilePath = Path.Combine(dir, "protocol.sln");
+
+            ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
+            ProtocolBuilder protocolBuilder = new ProtocolBuilder(solution, logCollector);
+
+            var buildResultItems = await protocolBuilder.BuildAsync();
+
+            Assert.IsNotNull(buildResultItems.Assemblies);
+            Assert.AreEqual(1, buildResultItems.Assemblies.Count);
+            Assert.AreEqual(@"microsoft.visualstudio.validation\17.8.8\lib\netstandard2.0\Microsoft.VisualStudio.Validation.dll", buildResultItems.Assemblies.First().DllImport);
+        }
+
+
         [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_BasicAsync()
         {
@@ -731,37 +752,37 @@ namespace QAction_3
 
             Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
-        
+
         [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion()
         {
-	        string originalProtocol = @"<Protocol>
+            string originalProtocol = @"<Protocol>
 	<Version>1.0.0.1</Version>
 </Protocol>";
 
-	        string expected = @"<Protocol>
+            string expected = @"<Protocol>
 	<Version>1.0.0.1_DIS</Version>
 </Protocol>";
 
-	        var projects = new Dictionary<string, Project>(0);
+            var projects = new Dictionary<string, Project>(0);
 
-	        ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS");
+            ProtocolBuilder builder = new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS");
 
-	        string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
+            string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
-	        Diff d = DiffBuilder.Compare(Input.FromString(expected))
-	                            .WithTest(Input.FromString(result)).Build();
+            Diff d = DiffBuilder.Compare(Input.FromString(expected))
+                                .WithTest(Input.FromString(result)).Build();
 
-	        Assert.IsFalse(d.HasDifferences(), d.ToString());
+            Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
 
         [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion_MissingVersionTag()
         {
-	        string originalProtocol = @"<Protocol>
+            string originalProtocol = @"<Protocol>
 </Protocol>";
-            
-	        var projects = new Dictionary<string, Project>(0);
+
+            var projects = new Dictionary<string, Project>(0);
 
             Assert.ThrowsException<AssemblerException>(() => new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS"));
         }
