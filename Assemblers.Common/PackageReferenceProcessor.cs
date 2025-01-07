@@ -329,17 +329,22 @@
             }
         }
 
-        private async Task<IEnumerable<string>> ExtractPrimaryAssembliesAsync(List<FrameworkSpecificGroup> libItems, NuGetFramework nearestVersion, PackageReaderBase packageReader)
+        private static async Task<IEnumerable<string>> ExtractPrimaryAssembliesAsync(List<FrameworkSpecificGroup> libItems, NuGetFramework nearestVersion, PackageReaderBase packageReader)
         {
-            var filteredLibItems = new List<string>();
+            if (nearestVersion == null)
+            {
+                return Array.Empty<string>();
+            }
+
             var nearestLibItems = libItems.FirstOrDefault(x => x.TargetFramework.Equals(nearestVersion));
             var shortFolderName = nearestVersion.GetShortFolderName();
 
             if (nearestLibItems == null)
             {
-                return filteredLibItems;
+                return Array.Empty<string>();
             }
 
+            var filteredLibItems = new List<string>();
             foreach (var libItem in nearestLibItems.Items)
             {
                 if (!libItem.EndsWith(".dll"))
@@ -348,7 +353,7 @@
                     continue;
                 }
 
-                string prefix = @"lib/" + shortFolderName + '/';
+                string prefix = "lib/" + shortFolderName + '/';
 
                 if (!libItem.StartsWith(prefix))
                 {

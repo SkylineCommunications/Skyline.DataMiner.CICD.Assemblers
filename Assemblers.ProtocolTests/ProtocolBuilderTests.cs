@@ -40,7 +40,6 @@
             Assert.AreEqual(@"microsoft.visualstudio.validation\17.8.8\lib\netstandard2.0\Microsoft.VisualStudio.Validation.dll", buildResultItems.Assemblies.First().DllImport);
         }
 
-
         [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_BasicAsync()
         {
