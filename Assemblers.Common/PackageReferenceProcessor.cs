@@ -337,9 +337,24 @@
             }
 
             var nearestLibItems = libItems.FirstOrDefault(x => x.TargetFramework.Equals(nearestVersion));
-            var shortFolderName = nearestVersion.GetShortFolderName();
 
-            if (nearestLibItems == null)
+            if (nearestLibItems?.Items == null || !nearestLibItems.Items.Any())
+            {
+                return Array.Empty<string>();
+            }
+
+            // Determine short folder name as follows because nearestVersion.GetShortFolderName(); could give a different result (e.g. net40) compared to what is used in the actual package (e.g. net4).
+            var firstItem = nearestLibItems.Items.First();
+            var firstItemParts = firstItem.Split('/');
+
+            string shortFolderName = null;
+
+            if(firstItemParts.Length > 1)
+            {
+                shortFolderName = firstItemParts[1];
+            }
+
+            if(shortFolderName == null)
             {
                 return Array.Empty<string>();
             }
@@ -355,6 +370,7 @@
 
                 string prefix = "lib/" + shortFolderName + '/';
 
+                // Safeguard.
                 if (!libItem.StartsWith(prefix))
                 {
                     continue;

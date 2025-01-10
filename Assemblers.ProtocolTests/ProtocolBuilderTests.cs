@@ -41,6 +41,24 @@
         }
 
         [TestMethod]
+        public async Task ProtocolBuilder_BuildAsync_KeepReferenceAssemblies()
+        {
+            var logCollector = new Logging(true);
+
+            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Protocol\Solution3"));
+            var solutionFilePath = Path.Combine(dir, "protocol.sln");
+
+            ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
+            ProtocolBuilder protocolBuilder = new ProtocolBuilder(solution, logCollector);
+
+            var buildResultItems = await protocolBuilder.BuildAsync();
+
+            Assert.IsNotNull(buildResultItems.Assemblies);
+            Assert.AreEqual(18, buildResultItems.Assemblies.Count);
+        }
+
+        [TestMethod]
         public async Task ProtocolCompiler_ProtocolBuilder_BasicAsync()
         {
             string originalProtocol = @"<Protocol>
