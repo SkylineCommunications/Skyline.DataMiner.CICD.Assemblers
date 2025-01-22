@@ -423,7 +423,8 @@
             }
             else if (!NetFramework481ReferenceAssemblies.Contains(dll) && !_fileSystem.Path.IsPathRooted(dll))
             {
-                dll = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\ProtocolScripts", dll);
+                // Always use the DllImport folder (is synced on a cluster)
+                dll = _fileSystem.Path.Combine(@"C:\Skyline DataMiner\ProtocolScripts\DllImport", dll);
             }
             else
             {
