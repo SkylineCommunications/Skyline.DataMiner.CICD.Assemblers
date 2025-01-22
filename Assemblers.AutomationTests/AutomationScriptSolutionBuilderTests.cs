@@ -409,6 +409,7 @@ public class Script
             generatedEntries.Should().BeEquivalentTo(expectedEntries);
         }
 
+        [Ignore("Only usable internally, until there is an 'official' NuGet that has SRM as a dependency")]
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution9_SrmAsDependencyAsync()
         {
