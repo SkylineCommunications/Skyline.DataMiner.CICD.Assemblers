@@ -13,3 +13,6 @@ updates:
       skyline-cicd-parsers:
         patterns:
           - "Skyline.DataMiner.CICD.Parsers.*"
+    ignore:
+      - dependency-name: "FluentAssertions"
+        versions: [ ">=8.0.0" ]
