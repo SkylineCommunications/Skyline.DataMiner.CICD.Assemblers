@@ -507,7 +507,7 @@ class Class1 {}]]>
 			<Value>
 				<![CDATA[using System;]]>
 			</Value>
-			<Param type=""ref"">C:\Skyline DataMiner\ProtocolScripts\Newtonsoft.Json.dll</Param>
+			<Param type=""ref"">C:\Skyline DataMiner\ProtocolScripts\DllImport\Newtonsoft.Json.dll</Param>
         </Exe>
 	</Script>
 </DMSScript>";
@@ -550,7 +550,7 @@ class Class1 {}]]>
 			<Value>
 				<![CDATA[using System;]]>
 			</Value>
-			<Param type=""ref"">C:\Skyline DataMiner\ProtocolScripts\Newtonsoft.Json.dll</Param>
+			<Param type=""ref"">C:\Skyline DataMiner\ProtocolScripts\DllImport\Newtonsoft.Json.dll</Param>
         </Exe>
 	</Script>
 </DMSScript>";
@@ -594,7 +594,7 @@ class Class1 {}]]>
 			<Value>
 				<![CDATA[using System;]]>
 			</Value>
-			<Param type=""ref"">C:\Skyline DataMiner\ProtocolScripts\Newtonsoft.Json.dll</Param>
+			<Param type=""ref"">C:\Skyline DataMiner\ProtocolScripts\DllImport\Newtonsoft.Json.dll</Param>
         </Exe>
 	</Script>
 </DMSScript>";

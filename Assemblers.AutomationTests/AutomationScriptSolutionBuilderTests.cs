@@ -171,7 +171,7 @@
 
             List<string> expectedEntries = new List<string>
             {
-                @"C:\Skyline DataMiner\ProtocolScripts\MyCustomDll.dll",
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\MyCustomDll.dll",
             };
 
             generatedEntries.Should().BeEquivalentTo(expectedEntries);
@@ -357,7 +357,6 @@ public class Script
             Assert.AreEqual(expectedResult, result[0].Value.Document);
         }
 
-        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution8_SrmAsync()
         {
@@ -404,14 +403,13 @@ public class Script
                 @"System.Xml.Linq.dll",
 
                 @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\SLSRMLibrary.dll",
-                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\SLDijkstraSearch.dll",
-                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\Skyline.DataMiner.Core.SRM.Utils.IAS.dll"
+                @"C:\Skyline DataMiner\ProtocolScripts\DllImport\SRM\SLDijkstraSearch.dll"
             };
 
             generatedEntries.Should().BeEquivalentTo(expectedEntries);
         }
 
-        [Ignore("Wait for a version that is available on nuget.org (SRM)")]
+        [Ignore("Only usable internally, until there is an 'official' NuGet that has SRM as a dependency")]
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution9_SrmAsDependencyAsync()
         {
