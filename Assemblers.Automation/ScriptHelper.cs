@@ -33,6 +33,14 @@
         };
 
         /// <summary>
+        /// The DLLs that need to be referenced with the ProtocolScripts path.
+        /// </summary>
+        public static readonly string[] DllsWithProtocolScriptsPath =
+        {
+            "DataMinerSolutions.dll",
+        };
+
+        /// <summary>
         /// Gets a value indicating whether the specified DLL is by default referenced by DataMiner.
         /// </summary>
         /// <param name="dll">The DLL.</param>
@@ -50,6 +58,16 @@
         public static bool NeedsFilesPath(string dll)
         {
             return DllsWithFilesPath.Contains(dll, StringComparer.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the specified DLL needs to be referenced via the ProtocolScripts folder instead of the default ProtocolScripts\DllImport.
+        /// </summary>
+        /// <param name="dll">Name of the DLL.</param>
+        /// <returns><c>true</c> if the DLL needs to be referenced via the ProtocolScripts folder; otherwise <c>false</c>.</returns>
+        public static bool NeedsProtocolScriptsPath(string dll)
+        {
+            return DllsWithProtocolScriptsPath.Contains(dll, StringComparer.OrdinalIgnoreCase);
         }
     }
 }
