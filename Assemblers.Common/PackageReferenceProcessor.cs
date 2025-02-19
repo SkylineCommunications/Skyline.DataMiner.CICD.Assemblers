@@ -299,9 +299,9 @@
                             {
                                 fullPath = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(NuGetRootPath, resolvedPackage.Id.ToLower(), resolvedPackage.Version.ToString().ToLower(), filteredLibItem));
                                 dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, assemblyName); // fileInfo.Name
-                                Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + " is linux - Default");
+                                Debug.Assert(!assemblyName.Contains("/"), nameof(assemblyName) + $" is linux: {assemblyName}");
+                                Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + $" is linux - Default: Dir: {dllImportDirectory}");
                             }
-
 
                             var packageAssemblyReference = new PackageAssemblyReference(dllImportValue, fullPath, isFilePackage);
 
@@ -463,7 +463,7 @@
                             Debug.Assert(!fileName.Contains("/"), nameof(fileName) + $" is linux: {fileName}");
                             var dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, fileName);
 
-                            Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + " is linux - Remaining");
+                            Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + $" is linux - Remaining: Dir: {dllImportDirectory}");
                             nugetPackageAssemblies.NugetAssemblies.Add(new PackageAssemblyReference(dllImportValue, fullPath));
                         }
                     }
