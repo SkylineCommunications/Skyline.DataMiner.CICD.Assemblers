@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -297,6 +298,8 @@
                                 dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, assemblyName); // fileInfo.Name
                             }
 
+                            Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + " is linux");
+
                             var packageAssemblyReference = new PackageAssemblyReference(dllImportValue, fullPath, isFilePackage);
 
                             // Needs to be added as a reference in the dllImport attribute/script references.
@@ -453,6 +456,7 @@
                             var fullPath = _fileSystem.Path.Combine(NuGetRootPath, packageToInstall.Id.ToLower(), packageToInstall.Version.ToString().ToLower(), filteredLibItem);
                             var dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, _fileSystem.Path.GetFileName(filteredLibItem));
 
+                            Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + " is linux");
                             nugetPackageAssemblies.NugetAssemblies.Add(new PackageAssemblyReference(dllImportValue, fullPath));
                         }
                     }

@@ -9,6 +9,7 @@
     using NuGet.Packaging.Core;
     using NuGet.Versioning;
     using Skyline.DataMiner.CICD.Common.NuGet;
+    using Skyline.DataMiner.CICD.FileSystem;
 
     [TestClass]
     public class PackageReferenceProcessorTests
@@ -84,7 +85,7 @@
 
             const string targetFrameworkMoniker = ".NETFramework,Version=v4.6.2";
 
-            const string pathJson = "newtonsoft.json\\13.0.3\\lib\\net45";
+            string pathJson = "newtonsoft.json\\13.0.3\\lib\\net45";
             const string pathExportImport = "skyline.dataminer.utils.exportimport\\1.0.0\\lib\\netstandard2.0";
             var expectedResult = new NuGetPackageAssemblyData
             {

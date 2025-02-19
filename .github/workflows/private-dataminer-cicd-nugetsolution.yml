@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
         
       - name: Test
-        run: dotnet test -c Release
+        run: dotnet test
 
 # Note: Tagging will push the nupackage to nuget.org using the provided NUGETAPIKEY. You can tag both a prerelease version (a.b.c-xxxx) or a stable release (a.b.c).
   CICD:
