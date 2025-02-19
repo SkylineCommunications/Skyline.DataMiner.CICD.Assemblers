@@ -267,7 +267,6 @@
                             string assemblyName = _fileSystem.Path.GetFileName(filteredLibItem);
                             string dllImportDirectory = packageKey + "\\" + _fileSystem.Path.GetDirectoryName(filteredLibItem).Replace("/", "\\");
 
-                            Debug.Assert(!dllImportDirectory.Contains("/"), nameof(dllImportDirectory) + $" is linux: {dllImportDirectory}");
                             nugetPackageAssemblies.ProcessedAssemblies.Add(assemblyName);
 
                             if (!resolvedPackage.Id.StartsWith(DevPackHelper.FilesPrefix))
@@ -284,23 +283,19 @@
                             {
                                 // Full path is not set as it should not be included.
                                 dllImportValue = assemblyName;
-                                Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + " is linux - Files");
                                 isFilePackage = true;
                                 dontAddToPackageToInstall = true;
                             }
                             else if (NuGetHelper.CustomNuGetPackages.TryGetValue(resolvedPackage.Id, out (string Path, bool InDllImportDirectory) info))
                             {
                                 dllImportValue = info.Path;
-                                Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + " is linux - Custom");
                                 isFilePackage = !info.InDllImportDirectory;
                                 dontAddToPackageToInstall = true;
                             }
                             else
                             {
                                 fullPath = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(NuGetRootPath, resolvedPackage.Id.ToLower(), resolvedPackage.Version.ToString().ToLower(), filteredLibItem));
-                                dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, assemblyName); // fileInfo.Name
-                                Debug.Assert(!assemblyName.Contains("/"), nameof(assemblyName) + $" is linux: {assemblyName}");
-                                Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + $" is linux - Default: Dir: {dllImportDirectory}");
+                                dllImportValue = dllImportDirectory + "\\" + assemblyName; // fileInfo.Name
                             }
 
                             var packageAssemblyReference = new PackageAssemblyReference(dllImportValue, fullPath, isFilePackage);
@@ -443,9 +438,7 @@
                     {
                         var firstFilteredLibItem = filteredLibItems.First();
                         string dllImportDirectory = packageKey + "\\" + _fileSystem.Path.GetDirectoryName(firstFilteredLibItem).Replace("/", "\\");
-
-                        Debug.Assert(!dllImportDirectory.Contains("/"), nameof(dllImportDirectory) + $" is linux: {dllImportDirectory}");
-
+                        
                         // Add the directory to be added to the dllImport attribute so the assembly can be found at runtime.
                         if (!nugetPackageAssemblies.ImplicitDllImportDirectoryReferences.Contains(dllImportDirectory))
                         {
@@ -460,10 +453,8 @@
                         {
                             var fullPath = _fileSystem.Path.Combine(NuGetRootPath, packageToInstall.Id.ToLower(), packageToInstall.Version.ToString().ToLower(), filteredLibItem);
                             string fileName = _fileSystem.Path.GetFileName(filteredLibItem);
-                            Debug.Assert(!fileName.Contains("/"), nameof(fileName) + $" is linux: {fileName}");
-                            var dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, fileName);
+                            var dllImportValue = dllImportDirectory + "\\" + fileName;
 
-                            Debug.Assert(!dllImportValue.Contains("/"), nameof(dllImportValue) + $" is linux - Remaining: Dir: {dllImportDirectory}");
                             nugetPackageAssemblies.NugetAssemblies.Add(new PackageAssemblyReference(dllImportValue, fullPath));
                         }
                     }
