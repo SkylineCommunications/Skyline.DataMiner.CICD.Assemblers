@@ -294,7 +294,7 @@
                             else
                             {
                                 fullPath = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(NuGetRootPath, resolvedPackage.Id.ToLower(), resolvedPackage.Version.ToString().ToLower(), filteredLibItem));
-                                dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, assemblyName); // fileInfo.Name
+                                dllImportValue = dllImportDirectory + "\\" + assemblyName; // fileInfo.Name
                             }
 
                             var packageAssemblyReference = new PackageAssemblyReference(dllImportValue, fullPath, isFilePackage);
@@ -451,7 +451,7 @@
                         foreach (var filteredLibItem in filteredLibItems)
                         {
                             var fullPath = _fileSystem.Path.Combine(NuGetRootPath, packageToInstall.Id.ToLower(), packageToInstall.Version.ToString().ToLower(), filteredLibItem);
-                            var dllImportValue = _fileSystem.Path.Combine(dllImportDirectory, _fileSystem.Path.GetFileName(filteredLibItem));
+                            var dllImportValue = dllImportDirectory + "\\" + _fileSystem.Path.GetFileName(filteredLibItem);
 
                             nugetPackageAssemblies.NugetAssemblies.Add(new PackageAssemblyReference(dllImportValue, fullPath));
                         }
