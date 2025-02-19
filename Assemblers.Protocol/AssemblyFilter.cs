@@ -2,12 +2,12 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
     using Skyline.DataMiner.CICD.Assemblers.Common;
     using NuGet.Packaging.Core;
+    using Skyline.DataMiner.CICD.FileSystem;
 
     /// <summary>
     /// Provides functionality to filter assemblies based on target framework, package references, and build result items.
@@ -41,7 +41,7 @@
         /// <param name="newImport">The new import to add.</param>
         private static bool AddToDllImport(HashSet<string> dllImports, string newImport)
         {
-            if (!dllImports.Select(Path.GetFileName).Contains(Path.GetFileName(newImport)))
+            if (!dllImports.Select(FileSystem.Instance.Path.GetFileName).Contains(FileSystem.Instance.Path.GetFileName(newImport)))
             {
                 dllImports.Add(newImport);
                 return true;
@@ -68,7 +68,7 @@
 
             foreach (var libItem in nugetAssemblyData.DllImportNugetAssemblyReferences)
             {
-                string assemblyName = Path.GetFileName(libItem.DllImport);
+                string assemblyName = FileSystem.Instance.Path.GetFileName(libItem.DllImport);
 
                 if (assemblies.TryGetValue(assemblyName, out var entries))
                 {
@@ -93,7 +93,7 @@
                     }
                     else
                     {
-                        potentialRemainingDirectoryImports.Add(Path.GetDirectoryName(libItem.DllImport) + "\\");
+                        potentialRemainingDirectoryImports.Add(FileSystem.Instance.Path.GetDirectoryName(libItem.DllImport) + "\\");
                     }
                 }
                 else
@@ -110,7 +110,7 @@
                     }
                     else
                     {
-                        potentialRemainingDirectoryImports.Add(Path.GetDirectoryName(mostRecentLibItem.DllImport) + "\\");
+                        potentialRemainingDirectoryImports.Add(FileSystem.Instance.Path.GetDirectoryName(mostRecentLibItem.DllImport) + "\\");
                     }
 
                     foreach (var libItem in packagesContainingAssembly)
@@ -169,7 +169,7 @@
 
             foreach (var libItem in nugetAssemblyData.NugetAssemblies)
             {
-                if (!dllImports.Contains(Path.GetFileName(libItem.AssemblyPath)) && buildResultItems.Assemblies.FirstOrDefault(b => b.AssemblyPath == libItem.AssemblyPath) == null)
+                if (!dllImports.Contains(FileSystem.Instance.Path.GetFileName(libItem.AssemblyPath)) && buildResultItems.Assemblies.FirstOrDefault(b => b.AssemblyPath == libItem.AssemblyPath) == null)
                 {
                     buildResultItems.Assemblies.Add(libItem);
                 }

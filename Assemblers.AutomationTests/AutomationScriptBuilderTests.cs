@@ -6,8 +6,6 @@
     using System.Threading.Tasks;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using NuGet.Packaging.Core;
-    using NuGet.Versioning;
 
     using Org.XmlUnit.Builder;
     using Org.XmlUnit.Diff;

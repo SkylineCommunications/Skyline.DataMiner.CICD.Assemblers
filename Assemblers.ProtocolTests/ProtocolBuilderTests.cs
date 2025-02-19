@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
@@ -14,6 +13,7 @@
 
     using Skyline.DataMiner.CICD.Assemblers.Common;
     using Skyline.DataMiner.CICD.Assemblers.Protocol;
+    using Skyline.DataMiner.CICD.FileSystem;
     using Skyline.DataMiner.CICD.Parsers.Common.VisualStudio.Projects;
     using Skyline.DataMiner.CICD.Parsers.Common.Xml;
     using Skyline.DataMiner.CICD.Parsers.Protocol.VisualStudio;
@@ -26,9 +26,9 @@
         {
             var logCollector = new Logging(true);
 
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Protocol\Solution2"));
-            var solutionFilePath = Path.Combine(dir, "protocol.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution2"));
+            var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
 
             ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
             ProtocolBuilder protocolBuilder = new ProtocolBuilder(solution, logCollector);
@@ -45,9 +45,9 @@
         {
             var logCollector = new Logging(true);
 
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Protocol\Solution3"));
-            var solutionFilePath = Path.Combine(dir, "protocol.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution3"));
+            var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
 
             ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
             ProtocolBuilder protocolBuilder = new ProtocolBuilder(solution, logCollector);
@@ -680,9 +680,9 @@ class Class1 {}]]>
         public async Task ProtocolCompiler_Solution_Build()
         {
             // arrange
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Protocol\Solution1"));
-            var path = Path.Combine(dir, "protocol.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution1"));
+            var path = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
 
             var solution = ProtocolSolution.Load(path);
 

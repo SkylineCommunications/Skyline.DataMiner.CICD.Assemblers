@@ -1,7 +1,6 @@
 ﻿namespace Assemblers.AutomationTests
 {
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
@@ -12,6 +11,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Skyline.DataMiner.CICD.Assemblers.Automation;
+    using Skyline.DataMiner.CICD.FileSystem;
     using Skyline.DataMiner.CICD.Parsers.Automation.VisualStudio;
 
     [TestClass]
@@ -23,9 +23,9 @@
         public async Task AutomationScriptCompiler_Solution1_BuildAsync()
         {
             // arrange
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution1"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution1"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -46,9 +46,9 @@
         public async Task AutomationScriptCompiler_Solution2_BuildAsync()
         {
             // arrange
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution2"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution2"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -68,9 +68,9 @@
         public async Task AutomationScriptCompiler_Solution3_BuildAsync()
         {
             // arrange
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution3"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution3"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -92,9 +92,9 @@
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution4_SaveCompiledScriptAsync()
         {
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution4"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution4"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -138,9 +138,9 @@
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution5_SaveCompiledScriptAsync()
         {
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution5"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution5"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -184,9 +184,9 @@
         {
             string expectedLine = "engine.GenerateInformation(\"test ›\");";
 
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\SpecialChar"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\SpecialChar"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -259,9 +259,9 @@ public class Script
 </DMSScript>
 ";
 
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution6"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution6"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -341,9 +341,9 @@ public class Script
 	</Script>
 </DMSScript>";
 
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution7"));
-            var path = Path.Combine(dir, "AutomationScript.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution7"));
+            var path = FileSystem.Instance.Path.Combine(dir, "AutomationScript.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -360,9 +360,9 @@ public class Script
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution8_SrmAsync()
         {
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution8"));
-            var path = Path.Combine(dir, "Solution8.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution8"));
+            var path = FileSystem.Instance.Path.Combine(dir, "Solution8.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
@@ -413,9 +413,9 @@ public class Script
         [TestMethod]
         public async Task AutomationScriptCompilerUsingNuGetPackages_Solution9_SrmAsDependencyAsync()
         {
-            var baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = Path.GetFullPath(Path.Combine(baseDir, @"TestFiles\Solutions\Solution9"));
-            var path = Path.Combine(dir, "Solution9.sln");
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution9"));
+            var path = FileSystem.Instance.Path.Combine(dir, "Solution9.sln");
 
             var solution = AutomationScriptSolution.Load(path);
             var builder = new AutomationScriptSolutionBuilder(solution);
