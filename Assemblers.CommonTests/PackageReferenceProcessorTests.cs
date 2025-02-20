@@ -119,7 +119,7 @@
             // Assert
             result.Should().BeEquivalentTo(expectedResult, ExcludeAssemblyPath);
         }
-        
+
         [TestMethod]
         public async Task ProcessAsyncTest_UseOfOtherDevPackFile()
         {
@@ -245,7 +245,7 @@
 
                     // Dependencies from System.Threading.Tasks.Extensions
                     "System.Runtime.CompilerServices.Unsafe.dll",
-                    
+
                     "System.Configuration.dll",
                     "mscorlib.dll",
                 },
