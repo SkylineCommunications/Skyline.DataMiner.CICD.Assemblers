@@ -19,7 +19,6 @@
     using Skyline.DataMiner.CICD.Parsers.Protocol.VisualStudio;
 
     [TestClass]
-    [Ignore]
     public class ProtocolBuilderTests
     {
         [TestMethod]
