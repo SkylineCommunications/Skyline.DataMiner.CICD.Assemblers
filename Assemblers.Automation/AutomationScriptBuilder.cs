@@ -244,7 +244,7 @@
 
             foreach (string dir in directoriesWithExplicitDllImport)
             {
-                string packageName = dir.Split(_fileSystem.Path.DirectorySeparatorChar).First();
+                string packageName = dir.Split('\\').First(); // Fixed to windows directory separator
 
                 LogDebug($"ProcessLibAssemblies|Build nugetPackages|Dir: {dir}|PackageName: {packageName}");
                 nugetPackages.Add(packageName);
@@ -252,7 +252,7 @@
 
             foreach (string dir in nugetAssemblyData.DllImportDirectoryReferences)
             {
-                string packageName = dir.Split('\\').First();
+                string packageName = dir.Split('\\').First(); // Fixed to windows directory separator
 
                 LogDebug($"ProcessLibAssemblies|DllImportDirectoryReferences|Check to add|Dir: {dir}|PackageName: {packageName}");
                 if (nugetPackages.Contains(packageName))
