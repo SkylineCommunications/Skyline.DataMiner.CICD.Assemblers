@@ -617,16 +617,9 @@
             var existsResource = await rootRepository.GetResourceAsync<FindLocalPackagesResource>(cancelToken);
             if (existsResource.Exists(packageToInstall, nuGetLogger, cancelToken))
             {
+                // Package is already installed.
                 return;
             }
-
-            //var localPackage = GlobalPackagesFolderUtility.GetPackage(packageToInstall, NuGetRootPath);
-
-            //if (localPackage != null)
-            //{
-            //    // Package is already installed.
-            //    return;
-            //}
 
             LogDebug($"InstallPackageIfNotFound|Installing package: {packageToInstall.Id} - {packageToInstall.Version}");
 
