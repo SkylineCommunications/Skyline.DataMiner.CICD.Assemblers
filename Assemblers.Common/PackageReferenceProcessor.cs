@@ -644,42 +644,49 @@
             var repository = Repository.Factory.GetCoreV3(packageSource);
             var resource = await repository.GetResourceAsync<FindPackageByIdResource>(cancelToken);
 
-            using (System.IO.MemoryStream packageStream = new System.IO.MemoryStream())
-            {
-                await resource.CopyNupkgToStreamAsync(
-                    packageToInstall.Id,
-                    packageToInstall.Version,
-                    packageStream,
-                    cacheContext,
-                    NullLogger.Instance,
-                    CancellationToken.None);
+            DownloadResource resourceAsync = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
-                packageStream.Seek(0, System.IO.SeekOrigin.Begin);
+            DownloadResourceResult downloadResourceResultAsync = await resourceAsync.GetDownloadResourceResultAsync(packageToInstall, new PackageDownloadContext(cacheContext),
+                SettingsUtility.GetGlobalPackagesFolder(settings), nuGetLogger, cancelToken);
+
+            try
+            {
                 var policy = ClientPolicyContext.GetClientPolicy(settings, nuGetLogger);
 
-                try
-                {
-                    // Add it to the global package folder
-                    var result = await GlobalPackagesFolderUtility.AddPackageAsync(
-                        packageSource.Source,
-                        packageToInstall,
-                        packageStream,
-                        NuGetRootPath,
-                        Guid.Empty,
-                        policy,
-                        nuGetLogger,
-                        CancellationToken.None);
+                // Add it to the global package folder
+                var result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                    packageSource.Source,
+                    packageToInstall,
+                    downloadResourceResultAsync.PackageStream,
+                    NuGetRootPath,
+                    Guid.Empty,
+                    policy,
+                    nuGetLogger,
+                    CancellationToken.None);
 
-                    LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"#@#@#@#@#@#@#@#@#@#@ {packageToInstall.Id} - {packageToInstall.Version}");
-                    Console.WriteLine(e);
-                    throw;
-                }
-
+                LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
             }
+            catch (Exception e)
+            {
+                Console.WriteLine($"#@#@#@#@#@#@#@#@#@#@ {packageToInstall.Id} - {packageToInstall.Version}");
+                Console.WriteLine(e);
+                throw;
+            }
+
+            //using (System.IO.MemoryStream packageStream = new System.IO.MemoryStream())
+            //{
+            //    await resource.CopyNupkgToStreamAsync(
+            //        packageToInstall.Id,
+            //        packageToInstall.Version,
+            //        packageStream,
+            //        cacheContext,
+            //        NullLogger.Instance,
+            //        CancellationToken.None);
+
+            //    packageStream.Seek(0, System.IO.SeekOrigin.Begin);
+
+
+            //}
         }
 
         private void LogDebug(string message)
