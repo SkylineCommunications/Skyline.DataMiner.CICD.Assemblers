@@ -671,7 +671,7 @@
             }
             catch
             {
-                logCollector?.ReportStatus("Retrying to add package");
+                LogDebug("Retrying to add package without caching");
                 string tempDir = FileSystem.Instance.Directory.CreateTemporaryDirectory();
 
                 try
@@ -703,8 +703,6 @@
                 {
                     FileSystem.Instance.Directory.DeleteDirectory(tempDir);
                 }
-
-                throw new InvalidOperationException("BACKUP PLAN WORKED!");
             }
         }
 
