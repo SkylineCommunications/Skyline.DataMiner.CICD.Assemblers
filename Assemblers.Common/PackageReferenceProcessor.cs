@@ -721,6 +721,8 @@
                 {
                     FileSystem.Instance.Directory.DeleteDirectory(tempDir);
                 }
+
+                throw new InvalidOperationException("BACKUP PLAN WORKED!")
             }
         }
 
