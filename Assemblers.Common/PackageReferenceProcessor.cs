@@ -646,33 +646,80 @@
             var repository = Repository.Factory.GetCoreV3(packageSource);
             var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
-            using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
-                packageToInstall,
-                new PackageDownloadContext(cacheContext, NuGetRootPath, true),
-                SettingsUtility.GetGlobalPackagesFolder(settings),
-                nuGetLogger,
-                cancelToken))
+            try
             {
-                if (downloadResourceResult.Status != DownloadResourceResultStatus.Available && downloadResourceResult.Status != DownloadResourceResultStatus.AvailableWithoutStream)
-                {
-                    throw new InvalidOperationException($"SOMETHING WENT WRONG: {downloadResourceResult.Status}");
-                }
-                // Add it to the global package folder
-                using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
-                           packageSource.Source,
+                using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
                            packageToInstall,
-                           downloadResourceResult.PackageStream,
-                           NuGetRootPath,
-                           Guid.Empty,
-                           clientPolicyContext,
+                           new PackageDownloadContext(cacheContext),
+                           SettingsUtility.GetGlobalPackagesFolder(settings),
                            nuGetLogger,
-                           CancellationToken.None))
+                           cancelToken))
                 {
-                    if (result.Status != DownloadResourceResultStatus.Available && result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                    if (downloadResourceResult.Status != DownloadResourceResultStatus.Available && downloadResourceResult.Status != DownloadResourceResultStatus.AvailableWithoutStream)
                     {
-                        throw new InvalidOperationException($"SOMETHING WENT WRONG AFTER DOWNLOAD?: {result.Status}");
+                        throw new InvalidOperationException($"SOMETHING WENT WRONG: {downloadResourceResult.Status}");
                     }
-                    LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                    // Add it to the global package folder
+                    using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                               packageSource.Source,
+                               packageToInstall,
+                               downloadResourceResult.PackageStream,
+                               NuGetRootPath,
+                               Guid.Empty,
+                               clientPolicyContext,
+                               nuGetLogger,
+                               CancellationToken.None))
+                    {
+                        if (result.Status != DownloadResourceResultStatus.Available && result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                        {
+                            throw new InvalidOperationException($"SOMETHING WENT WRONG AFTER DOWNLOAD?: {result.Status}");
+                        }
+                        LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                    }
+                }
+            }
+            catch
+            {
+                logCollector.ReportStatus("Retrying to add package");
+                Console.WriteLine("Retrying to add package");
+                string tempDir = FileSystem.Instance.Directory.CreateTemporaryDirectory();
+
+                try
+                {
+                    // Retrying without cache
+                    using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
+                               packageToInstall,
+                               new PackageDownloadContext(cacheContext, tempDir, true),
+                               SettingsUtility.GetGlobalPackagesFolder(settings),
+                               nuGetLogger,
+                               cancelToken))
+                    {
+                        if (downloadResourceResult.Status != DownloadResourceResultStatus.Available && downloadResourceResult.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                        {
+                            throw new InvalidOperationException($"SOMETHING WENT WRONG2: {downloadResourceResult.Status}");
+                        }
+                        // Add it to the global package folder
+                        using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                                   packageSource.Source,
+                                   packageToInstall,
+                                   downloadResourceResult.PackageStream,
+                                   NuGetRootPath,
+                                   Guid.Empty,
+                                   clientPolicyContext,
+                                   nuGetLogger,
+                                   CancellationToken.None))
+                        {
+                            if (result.Status != DownloadResourceResultStatus.Available && result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                            {
+                                throw new InvalidOperationException($"SOMETHING WENT WRONG AFTER DOWNLOAD2?: {result.Status}");
+                            }
+                            LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                        }
+                    }
+                }
+                finally
+                {
+                    FileSystem.Instance.Directory.DeleteDirectory(tempDir);
                 }
             }
         }
