@@ -140,7 +140,6 @@
             using (var cacheContext = new SourceCacheContext())
             {
                 cacheContext.MaxAge = DateTimeOffset.UtcNow;
-                cacheContext.DirectDownload = true;
                 cacheContext.RefreshMemoryCache = true;
                 cacheContext.NoCache = true;
 
