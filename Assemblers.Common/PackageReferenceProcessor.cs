@@ -30,6 +30,7 @@
         private readonly ISettings settings;
         private readonly ILogger nuGetLogger;
         private readonly ICollection<SourceRepository> repositories;
+        private readonly SourceRepository rootRepository;
 
         // V3 package path resolver
         private readonly VersionFolderPathResolver versionFolderPathResolver;
@@ -67,7 +68,8 @@
 
             // Add global packages to be the first repository as it speeds up everything when reading from disk then via internet.
             var repos = sourceRepositoryProvider.GetRepositories().ToList();
-            repos.Insert(0, new SourceRepository(new PackageSource(NuGetRootPath), Repository.Provider.GetCoreV3()));
+            rootRepository = new SourceRepository(new PackageSource(NuGetRootPath), Repository.Provider.GetCoreV3());
+            repos.Insert(0, rootRepository);
             repositories = repos;
 
             // https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
@@ -612,6 +614,12 @@
 
         private async Task InstallPackageIfNotFound(PackageIdentity packageToInstall, SourceCacheContext cacheContext, CancellationToken cancelToken)
         {
+            var existsResource = await rootRepository.GetResourceAsync<FindLocalPackagesResource>(cancelToken);
+            if (existsResource.Exists(packageToInstall, nuGetLogger, cancelToken))
+            {
+                return;
+            }
+
             //var localPackage = GlobalPackagesFolderUtility.GetPackage(packageToInstall, NuGetRootPath);
 
             //if (localPackage != null)
@@ -620,7 +628,7 @@
             //    return;
             //}
 
-            //LogDebug($"InstallPackageIfNotFound|Installing package: {packageToInstall.Id} - {packageToInstall.Version}");
+            LogDebug($"InstallPackageIfNotFound|Installing package: {packageToInstall.Id} - {packageToInstall.Version}");
 
             PackageSource packageSource = null;
             // Figure out which packageSource is needed
@@ -643,14 +651,6 @@
             }
             
             var repository = Repository.Factory.GetCoreV3(packageSource);
-
-            var existsResource = await repository.GetResourceAsync<FindLocalPackagesResource>(cancelToken);
-            if (existsResource.Exists(packageToInstall,nuGetLogger, cancelToken))
-            {
-                return;
-            }
-            
-
             var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
             DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
