@@ -653,6 +653,10 @@
                 nuGetLogger,
                 cancelToken))
             {
+                if (downloadResourceResult.Status != DownloadResourceResultStatus.Available || downloadResourceResult.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                {
+                    throw new InvalidOperationException($"SOMETHING WENT WRONG: {downloadResourceResult.Status}");
+                }
                 // Add it to the global package folder
                 using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
                            packageSource.Source,
@@ -666,7 +670,7 @@
                 {
                     if (result.Status != DownloadResourceResultStatus.Available || result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
                     {
-                        throw new InvalidOperationException($"SOMETHING WENT WRONG: {result}");
+                        throw new InvalidOperationException($"SOMETHING WENT WRONG AFTER DOWNLOAD?: {result.Status}");
                     }
                     LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
                 }
