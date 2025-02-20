@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -34,10 +33,9 @@
 
         // V3 package path resolver
         private readonly VersionFolderPathResolver versionFolderPathResolver;
-
         private readonly FrameworkReducer frameworkReducer;
-
         private readonly SourceRepositoryProvider sourceRepositoryProvider;
+        private readonly ClientPolicyContext clientPolicyContext;
 
         private readonly IFileSystem _fileSystem = FileSystem.Instance;
 
@@ -59,6 +57,8 @@
 
             // Start with the lowest settings. It will automatically look at the other NuGet.config files it can find on the default locations
             settings = Settings.LoadDefaultSettings(root: directoryForNuGetConfig);
+
+            clientPolicyContext = ClientPolicyContext.GetClientPolicy(settings, nuGetLogger);
 
             var provider = new PackageSourceProvider(settings);
             sourceRepositoryProvider = new SourceRepositoryProvider(provider, Repository.Provider.GetCoreV3());
@@ -350,12 +350,12 @@
 
             string shortFolderName = null;
 
-            if(firstItemParts.Length > 1)
+            if (firstItemParts.Length > 1)
             {
                 shortFolderName = firstItemParts[1];
             }
 
-            if(shortFolderName == null)
+            if (shortFolderName == null)
             {
                 return Array.Empty<string>();
             }
@@ -438,7 +438,7 @@
                     {
                         var firstFilteredLibItem = filteredLibItems.First();
                         string dllImportDirectory = packageKey + "\\" + _fileSystem.Path.GetDirectoryName(firstFilteredLibItem).Replace("/", "\\");
-                        
+
                         // Add the directory to be added to the dllImport attribute so the assembly can be found at runtime.
                         if (!nugetPackageAssemblies.ImplicitDllImportDirectoryReferences.Contains(dllImportDirectory))
                         {
@@ -642,51 +642,27 @@
             }
 
             var repository = Repository.Factory.GetCoreV3(packageSource);
-            var resource = await repository.GetResourceAsync<FindPackageByIdResource>(cancelToken);
+            var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
-            DownloadResource resourceAsync = await repository.GetResourceAsync<DownloadResource>(cancelToken);
+            DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
+                packageToInstall,
+                new PackageDownloadContext(cacheContext),
+                SettingsUtility.GetGlobalPackagesFolder(settings),
+                nuGetLogger,
+                cancelToken);
+            
+            // Add it to the global package folder
+            var result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                packageSource.Source,
+                packageToInstall,
+                downloadResourceResult.PackageStream,
+                NuGetRootPath,
+                Guid.Empty,
+                clientPolicyContext,
+                nuGetLogger,
+                CancellationToken.None);
 
-            DownloadResourceResult downloadResourceResultAsync = await resourceAsync.GetDownloadResourceResultAsync(packageToInstall, new PackageDownloadContext(cacheContext),
-                SettingsUtility.GetGlobalPackagesFolder(settings), nuGetLogger, cancelToken);
-
-            try
-            {
-                var policy = ClientPolicyContext.GetClientPolicy(settings, nuGetLogger);
-
-                // Add it to the global package folder
-                var result = await GlobalPackagesFolderUtility.AddPackageAsync(
-                    packageSource.Source,
-                    packageToInstall,
-                    downloadResourceResultAsync.PackageStream,
-                    NuGetRootPath,
-                    Guid.Empty,
-                    policy,
-                    nuGetLogger,
-                    CancellationToken.None);
-
-                LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"#@#@#@#@#@#@#@#@#@#@ {packageToInstall.Id} - {packageToInstall.Version}");
-                Console.WriteLine(e);
-                throw;
-            }
-
-            //using (System.IO.MemoryStream packageStream = new System.IO.MemoryStream())
-            //{
-            //    await resource.CopyNupkgToStreamAsync(
-            //        packageToInstall.Id,
-            //        packageToInstall.Version,
-            //        packageStream,
-            //        cacheContext,
-            //        NullLogger.Instance,
-            //        CancellationToken.None);
-
-            //    packageStream.Seek(0, System.IO.SeekOrigin.Begin);
-
-
-            //}
+            LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
         }
 
         private void LogDebug(string message)
