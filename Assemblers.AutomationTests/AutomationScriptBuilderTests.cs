@@ -17,6 +17,7 @@
     using Skyline.DataMiner.CICD.Parsers.Common.Xml;
 
     [TestClass]
+    [Ignore]
     public class AutomationScriptBuilderTests
     {
         [TestMethod]

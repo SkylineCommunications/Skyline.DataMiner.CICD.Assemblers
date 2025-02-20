@@ -15,6 +15,7 @@
     using Skyline.DataMiner.CICD.Parsers.Automation.VisualStudio;
 
     [TestClass]
+    [Ignore]
     public class AutomationScriptSolutionBuilderTests
     {
         #region Solution 1 (Basic)

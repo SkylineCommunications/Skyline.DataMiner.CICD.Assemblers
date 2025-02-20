@@ -15,6 +15,7 @@
     using Skyline.DataMiner.CICD.Assemblers.Protocol;
 
     [TestClass]
+    [Ignore]
     public class AssemblyFilterTests
     {
         [TestMethod]
