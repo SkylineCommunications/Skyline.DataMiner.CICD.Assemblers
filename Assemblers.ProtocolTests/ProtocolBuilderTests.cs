@@ -28,7 +28,7 @@
 
             var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution2"));
-            var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
+            var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "Protocol.sln");
 
             ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
             ProtocolBuilder protocolBuilder = new ProtocolBuilder(solution, logCollector);
@@ -47,7 +47,7 @@
 
             var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution3"));
-            var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
+            var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "Protocol.sln");
 
             ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
             ProtocolBuilder protocolBuilder = new ProtocolBuilder(solution, logCollector);
@@ -682,7 +682,7 @@ class Class1 {}]]>
             // arrange
             var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution1"));
-            var path = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
+            var path = FileSystem.Instance.Path.Combine(dir, "Protocol.sln");
 
             var solution = ProtocolSolution.Load(path);
 
