@@ -646,25 +646,27 @@
             var repository = Repository.Factory.GetCoreV3(packageSource);
             var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
-            DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
+            using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
                 packageToInstall,
                 new PackageDownloadContext(cacheContext),
                 SettingsUtility.GetGlobalPackagesFolder(settings),
                 nuGetLogger,
-                cancelToken);
-
-            // Add it to the global package folder
-            var result = await GlobalPackagesFolderUtility.AddPackageAsync(
-                packageSource.Source,
-                packageToInstall,
-                downloadResourceResult.PackageStream,
-                NuGetRootPath,
-                Guid.Empty,
-                clientPolicyContext,
-                nuGetLogger,
-                CancellationToken.None);
-
-            LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                cancelToken))
+            {
+                // Add it to the global package folder
+                using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                           packageSource.Source,
+                           packageToInstall,
+                           downloadResourceResult.PackageStream,
+                           NuGetRootPath,
+                           Guid.Empty,
+                           clientPolicyContext,
+                           nuGetLogger,
+                           CancellationToken.None))
+                {
+                    LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                }
+            }
         }
 
         private void LogDebug(string message)
