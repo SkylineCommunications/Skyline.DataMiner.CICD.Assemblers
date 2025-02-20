@@ -21,7 +21,7 @@
         public async Task ProcessAsyncTest_DuplicateFrameworkScenario()
         {
             // Arrange
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {

@@ -219,7 +219,7 @@
 
         private async Task BuildQActions(ProtocolDocumentEdit protocolEdit, BuildResultItems buildResultItems, ICompliancies compliancies)
         {
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             var qactions = protocolEdit.Protocol?.QActions;
             if (qactions != null)

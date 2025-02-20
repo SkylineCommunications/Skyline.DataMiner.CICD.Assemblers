@@ -111,7 +111,6 @@
 	</QActions>
 </Protocol>";
 
-
             var projects = new Dictionary<string, Project>()
             {
                 { "QAction_1", new Project("QAction_1", new[]{ new ProjectFile("QAction_1.cs", "using System;") }) },
