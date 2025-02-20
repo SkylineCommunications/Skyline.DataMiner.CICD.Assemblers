@@ -648,7 +648,7 @@
 
             using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
                 packageToInstall,
-                new PackageDownloadContext(cacheContext),
+                new PackageDownloadContext(cacheContext, NuGetRootPath, true),
                 SettingsUtility.GetGlobalPackagesFolder(settings),
                 nuGetLogger,
                 cancelToken))
@@ -664,6 +664,10 @@
                            nuGetLogger,
                            CancellationToken.None))
                 {
+                    if (result.Status != DownloadResourceResultStatus.Available || result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                    {
+                        throw new InvalidOperationException($"SOMETHING WENT WRONG: {result}");
+                    }
                     LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
                 }
             }
