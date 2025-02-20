@@ -612,15 +612,15 @@
 
         private async Task InstallPackageIfNotFound(PackageIdentity packageToInstall, SourceCacheContext cacheContext, CancellationToken cancelToken)
         {
-            var localPackage = GlobalPackagesFolderUtility.GetPackage(packageToInstall, NuGetRootPath);
+            //var localPackage = GlobalPackagesFolderUtility.GetPackage(packageToInstall, NuGetRootPath);
 
-            if (localPackage != null)
-            {
-                // Package is already installed.
-                return;
-            }
+            //if (localPackage != null)
+            //{
+            //    // Package is already installed.
+            //    return;
+            //}
 
-            LogDebug($"InstallPackageIfNotFound|Installing package: {packageToInstall.Id} - {packageToInstall.Version}");
+            //LogDebug($"InstallPackageIfNotFound|Installing package: {packageToInstall.Id} - {packageToInstall.Version}");
 
             PackageSource packageSource = null;
             // Figure out which packageSource is needed
@@ -641,8 +641,16 @@
                 logCollector?.ReportError($"PackageReferenceProcessor|InstallPackageIfNotFound|Unable to find package '{packageToInstall.Id}' with version '{packageToInstall.Version}");
                 return;
             }
-
+            
             var repository = Repository.Factory.GetCoreV3(packageSource);
+
+            var existsResource = await repository.GetResourceAsync<FindLocalPackagesResource>(cancelToken);
+            if (existsResource.Exists(packageToInstall,nuGetLogger, cancelToken))
+            {
+                return;
+            }
+            
+
             var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
             DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
