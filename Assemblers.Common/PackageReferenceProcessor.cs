@@ -653,7 +653,7 @@
                 nuGetLogger,
                 cancelToken))
             {
-                if (downloadResourceResult.Status != DownloadResourceResultStatus.Available || downloadResourceResult.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                if (downloadResourceResult.Status != DownloadResourceResultStatus.Available && downloadResourceResult.Status != DownloadResourceResultStatus.AvailableWithoutStream)
                 {
                     throw new InvalidOperationException($"SOMETHING WENT WRONG: {downloadResourceResult.Status}");
                 }
@@ -668,7 +668,7 @@
                            nuGetLogger,
                            CancellationToken.None))
                 {
-                    if (result.Status != DownloadResourceResultStatus.Available || result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
+                    if (result.Status != DownloadResourceResultStatus.Available && result.Status != DownloadResourceResultStatus.AvailableWithoutStream)
                     {
                         throw new InvalidOperationException($"SOMETHING WENT WRONG AFTER DOWNLOAD?: {result.Status}");
                     }
