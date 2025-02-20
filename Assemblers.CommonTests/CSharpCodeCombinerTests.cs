@@ -12,7 +12,6 @@
     using Skyline.DataMiner.CICD.Parsers.Common.VisualStudio.Projects;
 
     [TestClass]
-    [Ignore]
     public class CSharpCodeCombinerTests
     {
         [TestMethod]
