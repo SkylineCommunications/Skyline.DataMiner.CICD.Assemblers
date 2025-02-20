@@ -783,7 +783,7 @@ class Class1 {}]]>
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
             
-            Assert.IsFalse(d.HasDifferences(), d.ToString() + Environment.NewLine + "@#@#@#@#@#@#@#@" + Environment.NewLine + ">" + String.Join($"{Environment.NewLine}>", logCollector.Logging));
+            Assert.IsFalse(d.HasDifferences(), d.ToString() + Environment.NewLine + "@#@#@#@#@#@#@#@#" + Environment.NewLine + ">" + String.Join($"{Environment.NewLine}>", logCollector.Logging));
         }
     }
 }
