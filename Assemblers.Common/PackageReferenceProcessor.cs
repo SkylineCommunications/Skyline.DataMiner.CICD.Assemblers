@@ -104,6 +104,7 @@
             }
 
             LogDebug($"NuGet Root Path: {NuGetRootPath}");
+            nuGetLogger = new NuGetLogger(logCollector);
         }
 
         /// <summary>
@@ -669,6 +670,71 @@
         private void LogDebug(string message)
         {
             logCollector?.ReportDebug($"PackageReferenceProcessor|{message}");
+        }
+    }
+
+    public class NuGetLogger : ILogger
+    {
+        private readonly ILogCollector logCollector;
+
+        public NuGetLogger(ILogCollector logCollector)
+        {
+            this.logCollector = logCollector;
+        }
+
+        public void LogDebug(string data)
+        {
+            logCollector.ReportDebug(data);
+        }
+
+        public void LogVerbose(string data)
+        {
+            logCollector.ReportStatus(data);
+        }
+
+        public void LogInformation(string data)
+        {
+            logCollector.ReportStatus(data);
+        }
+
+        public void LogMinimal(string data)
+        {
+            logCollector.ReportStatus(data);
+        }
+
+        public void LogWarning(string data)
+        {
+            logCollector.ReportWarning(data);
+        }
+
+        public void LogError(string data)
+        {
+            logCollector.ReportError(data);
+        }
+
+        public void LogInformationSummary(string data)
+        {
+            logCollector.ReportStatus(data);
+        }
+
+        public void Log(LogLevel level, string data)
+        {
+            logCollector.ReportLog($"{level}|{data}");
+        }
+
+        public Task LogAsync(LogLevel level, string data)
+        {
+            return Task.Run(() => logCollector.ReportLog($"{level}|{data}"));
+        }
+
+        public void Log(ILogMessage message)
+        {
+            logCollector.ReportLog($"{message}");
+        }
+
+        public Task LogAsync(ILogMessage message)
+        {
+            return Task.Run(() => logCollector.ReportLog($"{message}"));
         }
     }
 }
