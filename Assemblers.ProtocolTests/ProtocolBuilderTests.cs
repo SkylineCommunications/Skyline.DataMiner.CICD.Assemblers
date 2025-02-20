@@ -793,7 +793,7 @@ namespace QAction_3
         }
 
         [TestMethod]
-        public async Task ProtocolCompiler_ProtocolBuilder_OverrideVersion_MissingVersionTag()
+        public void ProtocolCompiler_ProtocolBuilder_OverrideVersion_MissingVersionTag()
         {
             string originalProtocol = @"<Protocol>
 </Protocol>";
