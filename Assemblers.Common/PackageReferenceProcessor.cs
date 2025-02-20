@@ -680,7 +680,7 @@
             }
             catch
             {
-                logCollector.ReportStatus("Retrying to add package");
+                logCollector?.ReportStatus("Retrying to add package");
                 Console.WriteLine("Retrying to add package");
                 string tempDir = FileSystem.Instance.Directory.CreateTemporaryDirectory();
 
