@@ -5,8 +5,10 @@
     using System.Linq;
     using System.Reflection;
     using System.Threading.Tasks;
-    using Skyline.DataMiner.CICD.Assemblers.Common;
+
     using NuGet.Packaging.Core;
+
+    using Skyline.DataMiner.CICD.Assemblers.Common;
     using Skyline.DataMiner.CICD.FileSystem;
 
     /// <summary>

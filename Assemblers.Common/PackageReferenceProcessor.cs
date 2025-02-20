@@ -142,7 +142,6 @@
             using (var cacheContext = new SourceCacheContext())
             {
                 cacheContext.MaxAge = DateTimeOffset.UtcNow;
-                cacheContext.RefreshMemoryCache = true;
 
                 var allDependenciesPackageInfos = new HashSet<SourcePackageDependencyInfo>(PackageIdentityComparer.Default);
 
@@ -642,7 +641,7 @@
                 logCollector?.ReportError($"PackageReferenceProcessor|InstallPackageIfNotFound|Unable to find package '{packageToInstall.Id}' with version '{packageToInstall.Version}");
                 return;
             }
-            
+
             var repository = Repository.Factory.GetCoreV3(packageSource);
             var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
@@ -652,7 +651,7 @@
                 SettingsUtility.GetGlobalPackagesFolder(settings),
                 nuGetLogger,
                 cancelToken);
-            
+
             // Add it to the global package folder
             var result = await GlobalPackagesFolderUtility.AddPackageAsync(
                 packageSource.Source,
