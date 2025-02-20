@@ -12,6 +12,7 @@
 
     using Skyline.DataMiner.CICD.Assemblers.Automation;
     using Skyline.DataMiner.CICD.Assemblers.Common;
+    using Skyline.DataMiner.CICD.Loggers;
     using Skyline.DataMiner.CICD.Parsers.Automation.Xml;
     using Skyline.DataMiner.CICD.Parsers.Common.VisualStudio.Projects;
     using Skyline.DataMiner.CICD.Parsers.Common.Xml;
@@ -774,14 +775,15 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
+            LogCollector logCollector = new LogCollector(true);
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null, logCollector: logCollector);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
 
-            Assert.IsFalse(d.HasDifferences(), d.ToString() + Environment.NewLine + Environment.NewLine + "##RESULT##" + Environment.NewLine + result);
+            Assert.IsFalse(d.HasDifferences(), d.ToString() + Environment.NewLine + Environment.NewLine + "##LOGGING##" + Environment.NewLine + String.Join($"{Environment.NewLine}>", logCollector.Logging));
         }
     }
 }
