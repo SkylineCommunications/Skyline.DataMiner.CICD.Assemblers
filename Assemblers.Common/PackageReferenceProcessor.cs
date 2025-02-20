@@ -657,18 +657,28 @@
                 packageStream.Seek(0, System.IO.SeekOrigin.Begin);
                 var policy = ClientPolicyContext.GetClientPolicy(settings, nuGetLogger);
 
-                // Add it to the global package folder
-                var result = await GlobalPackagesFolderUtility.AddPackageAsync(
-                    packageSource.Source,
-                    packageToInstall,
-                    packageStream,
-                    NuGetRootPath,
-                    Guid.Empty,
-                    policy,
-                    nuGetLogger,
-                    CancellationToken.None);
+                try
+                {
+                    // Add it to the global package folder
+                    var result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                        packageSource.Source,
+                        packageToInstall,
+                        packageStream,
+                        NuGetRootPath,
+                        Guid.Empty,
+                        policy,
+                        nuGetLogger,
+                        CancellationToken.None);
 
-                LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                    LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"#@#@#@#@#@#@#@#@#@#@ {packageToInstall.Id} - {packageToInstall.Version}");
+                    Console.WriteLine(e);
+                    throw;
+                }
+
             }
         }
 
