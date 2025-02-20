@@ -38,7 +38,6 @@
 
             try
             {
-
                 // Act
                 var result = await AssemblyFilter.FilterAsync(targetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports,
                     projectPackages);
@@ -70,10 +69,6 @@
                 // Best effort to save time.
                 dllImports.Count.Should().Be(26);
                 buildResultItems.Assemblies.Count.Should().Be(22);
-            }
-            catch (Exception e)
-            {
-                throw;
             }
             finally
             {
