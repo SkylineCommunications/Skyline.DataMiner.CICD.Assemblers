@@ -17,8 +17,19 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
 
+  ubuntu-tests:
+    name: Run all tests (Ubuntu)
+    runs-on: ubuntu-22.04 # Latest misses mono for .NET Framework
+
+    steps:
+      - uses: actions/checkout@v4
+        
+      - name: Test
+        run: dotnet test
+
 # Note: Tagging will push the nupackage to nuget.org using the provided NUGETAPIKEY. You can tag both a prerelease version (a.b.c-xxxx) or a stable release (a.b.c).
   CICD:
+    needs: ubuntu-tests
     uses: SkylineCommunications/_ReusableWorkflows/.github/workflows/NuGet Solution Master Workflow.yml@main
     with:
       referenceName: ${{ github.ref_name }}

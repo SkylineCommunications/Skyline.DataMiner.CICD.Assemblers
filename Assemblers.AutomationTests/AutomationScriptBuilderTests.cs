@@ -6,14 +6,13 @@
     using System.Threading.Tasks;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using NuGet.Packaging.Core;
-    using NuGet.Versioning;
 
     using Org.XmlUnit.Builder;
     using Org.XmlUnit.Diff;
 
     using Skyline.DataMiner.CICD.Assemblers.Automation;
     using Skyline.DataMiner.CICD.Assemblers.Common;
+    using Skyline.DataMiner.CICD.Loggers;
     using Skyline.DataMiner.CICD.Parsers.Automation.Xml;
     using Skyline.DataMiner.CICD.Parsers.Common.VisualStudio.Projects;
     using Skyline.DataMiner.CICD.Parsers.Common.Xml;
@@ -29,7 +28,7 @@
         public void SLDisCompiler_AutomationScriptBuilder_TryFindProjectPlaceholder(string text, string expectedOutput)
         {
             // Act
-            AutomationScriptBuilder.TryFindProjectPlaceholder(text, out string result, out Match match);
+            AutomationScriptBuilder.TryFindProjectPlaceholder(text, out string result, out _);
 
             // Assert
             Assert.AreEqual(expectedOutput, result);
@@ -60,7 +59,7 @@
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -95,7 +94,7 @@
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script});
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script}, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -137,7 +136,7 @@
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -182,7 +181,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -206,7 +205,7 @@ class Class1 {}]]>
             var projects = new Dictionary<string, Project>();
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             var exception = Assert.ThrowsException<AggregateException>(() => builder.BuildAsync().Result);
 
@@ -232,7 +231,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             var exception = Assert.ThrowsException<AggregateException>(() => builder.BuildAsync().Result);
 
@@ -271,7 +270,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -311,7 +310,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -370,7 +369,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -427,7 +426,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -480,7 +479,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -522,7 +521,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -565,7 +564,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -609,7 +608,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -649,7 +648,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -679,7 +678,7 @@ class Class1 {}]]>
             var projects = new Dictionary<string, Project>();
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -714,7 +713,7 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
@@ -776,13 +775,13 @@ class Class1 {}]]>
             };
 
             Script script = new Script(XmlDocument.Parse(original));
-            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script });
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
 
             string result = (await builder.BuildAsync().ConfigureAwait(false)).Document;
 
             Diff d = DiffBuilder.Compare(Input.FromString(expected))
                                 .WithTest(Input.FromString(result)).Build();
-
+            
             Assert.IsFalse(d.HasDifferences(), d.ToString());
         }
     }

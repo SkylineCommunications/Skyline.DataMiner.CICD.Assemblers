@@ -12,6 +12,7 @@
     using NuGet.Versioning;
 
     using Skyline.DataMiner.CICD.Assemblers.Common;
+    using Skyline.DataMiner.CICD.FileSystem;
     using Skyline.DataMiner.CICD.Loggers;
     using Skyline.DataMiner.CICD.Models.Protocol.Enums;
     using Skyline.DataMiner.CICD.Models.Protocol.Read;
@@ -218,7 +219,7 @@
 
         private async Task BuildQActions(ProtocolDocumentEdit protocolEdit, BuildResultItems buildResultItems, ICompliancies compliancies)
         {
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             var qactions = protocolEdit.Protocol?.QActions;
             if (qactions != null)
@@ -287,7 +288,7 @@
             string dllsFolder = null;
             if (project.Path != null)
             {
-                dllsFolder = Path.Combine(Directory.GetParent(Path.GetDirectoryName(project.Path)).FullName, @"Dlls\");
+                dllsFolder = FileSystem.Instance.Path.Combine(FileSystem.Instance.Directory.GetParentDirectory(FileSystem.Instance.Path.GetDirectoryName(project.Path)), @"Dlls\");
             }
 
             NuGetPackageAssemblyData nugetAssemblyData = await ProcessPackageReferences(project, packageReferenceProcessor, buildResultItems, dllImports);
@@ -401,7 +402,7 @@
                     }
                     else
                     {
-                        if (r.HintPath != null && Path.IsPathRooted(r.HintPath))
+                        if (r.HintPath != null && FileSystem.Instance.Path.IsPathRooted(r.HintPath))
                         {
                             string absolutePath = r.HintPath;
 
@@ -428,7 +429,7 @@
                         // If custom DLL
                         if (r.HintPath != null && project.ProjectStyle == ProjectStyle.Sdk)
                         {
-                            string dllPath = FileSystem.FileSystem.Instance.Path.GetFullPath(FileSystem.FileSystem.Instance.Path.Combine(project.ProjectDirectory, r.HintPath));
+                            string dllPath = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(project.ProjectDirectory, r.HintPath));
 
                             buildResultItems.DllAssemblies.Add(new DllAssemblyReference(dllName, dllPath));
                         }

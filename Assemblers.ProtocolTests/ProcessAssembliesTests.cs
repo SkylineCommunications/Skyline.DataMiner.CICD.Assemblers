@@ -13,6 +13,7 @@
 
     using Skyline.DataMiner.CICD.Assemblers.Common;
     using Skyline.DataMiner.CICD.Assemblers.Protocol;
+    using Skyline.DataMiner.CICD.Loggers;
 
     [TestClass]
     public class AssemblyFilterTests
@@ -21,7 +22,7 @@
         public async Task ProcessAsyncTest_DuplicateFrameworkScenario()
         {
             // Arrange
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
@@ -35,7 +36,8 @@
             HashSet<string> dllImports = new HashSet<string>();
 
             // Act
-            var result = await AssemblyFilter.FilterAsync(targetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports, projectPackages);
+            var result = await AssemblyFilter.FilterAsync(targetFrameworkMoniker, packageReferenceProcessor, buildResultItems, dllImports,
+                projectPackages);
 
             // Assert
             // Make sure there is only one System.Net.Http.dll
@@ -56,8 +58,10 @@
             // dllImports should still have added the folder, in order to access other dll's from the same nuget
             dllImports.Should().Contain(@"system.net.http\4.3.4\lib\net46\");
 
-            var unexpectedPackageReference = new PackageAssemblyReference(@"system.net.http\4.3.4\lib\net46\System.Net.Http.dll", String.Empty, false);
-            buildResultItems.Assemblies.Should().NotContainEquivalentOf(unexpectedPackageReference, options => options.Excluding(reference => reference.AssemblyPath));
+            var unexpectedPackageReference =
+                new PackageAssemblyReference(@"system.net.http\4.3.4\lib\net46\System.Net.Http.dll", String.Empty, false);
+            buildResultItems.Assemblies.Should().NotContainEquivalentOf(unexpectedPackageReference,
+                options => options.Excluding(reference => reference.AssemblyPath));
 
             // Best effort to save time.
             dllImports.Count.Should().Be(26);

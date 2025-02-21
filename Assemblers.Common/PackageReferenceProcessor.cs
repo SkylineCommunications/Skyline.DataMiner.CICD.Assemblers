@@ -30,13 +30,13 @@
         private readonly ISettings settings;
         private readonly ILogger nuGetLogger;
         private readonly ICollection<SourceRepository> repositories;
+        private readonly SourceRepository rootRepository;
 
         // V3 package path resolver
         private readonly VersionFolderPathResolver versionFolderPathResolver;
-
         private readonly FrameworkReducer frameworkReducer;
-
         private readonly SourceRepositoryProvider sourceRepositoryProvider;
+        private readonly ClientPolicyContext clientPolicyContext;
 
         private readonly IFileSystem _fileSystem = FileSystem.Instance;
 
@@ -59,6 +59,8 @@
             // Start with the lowest settings. It will automatically look at the other NuGet.config files it can find on the default locations
             settings = Settings.LoadDefaultSettings(root: directoryForNuGetConfig);
 
+            clientPolicyContext = ClientPolicyContext.GetClientPolicy(settings, nuGetLogger);
+
             var provider = new PackageSourceProvider(settings);
             sourceRepositoryProvider = new SourceRepositoryProvider(provider, Repository.Provider.GetCoreV3());
 
@@ -66,7 +68,8 @@
 
             // Add global packages to be the first repository as it speeds up everything when reading from disk then via internet.
             var repos = sourceRepositoryProvider.GetRepositories().ToList();
-            repos.Insert(0, new SourceRepository(new PackageSource(NuGetRootPath), Repository.Provider.GetCoreV3()));
+            rootRepository = new SourceRepository(new PackageSource(NuGetRootPath), Repository.Provider.GetCoreV3());
+            repos.Insert(0, rootRepository);
             repositories = repos;
 
             // https://docs.microsoft.com/en-us/nuget/consume-packages/managing-the-global-packages-and-cache-folders
@@ -349,12 +352,12 @@
 
             string shortFolderName = null;
 
-            if(firstItemParts.Length > 1)
+            if (firstItemParts.Length > 1)
             {
                 shortFolderName = firstItemParts[1];
             }
 
-            if(shortFolderName == null)
+            if (shortFolderName == null)
             {
                 return Array.Empty<string>();
             }
@@ -609,9 +612,8 @@
 
         private async Task InstallPackageIfNotFound(PackageIdentity packageToInstall, SourceCacheContext cacheContext, CancellationToken cancelToken)
         {
-            var localPackage = GlobalPackagesFolderUtility.GetPackage(packageToInstall, NuGetRootPath);
-
-            if (localPackage != null)
+            var existsResource = await rootRepository.GetResourceAsync<FindLocalPackagesResource>(cancelToken);
+            if (existsResource.Exists(packageToInstall, nuGetLogger, cancelToken))
             {
                 // Package is already installed.
                 return;
@@ -640,33 +642,66 @@
             }
 
             var repository = Repository.Factory.GetCoreV3(packageSource);
-            var resource = await repository.GetResourceAsync<FindPackageByIdResource>(cancelToken);
+            var resource = await repository.GetResourceAsync<DownloadResource>(cancelToken);
 
-            using (System.IO.MemoryStream packageStream = new System.IO.MemoryStream())
+            try
             {
-                await resource.CopyNupkgToStreamAsync(
-                    packageToInstall.Id,
-                    packageToInstall.Version,
-                    packageStream,
-                    cacheContext,
-                    NullLogger.Instance,
-                    CancellationToken.None);
+                using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
+                           packageToInstall,
+                           new PackageDownloadContext(cacheContext),
+                           SettingsUtility.GetGlobalPackagesFolder(settings),
+                           nuGetLogger,
+                           cancelToken))
+                {
+                    // Add it to the global package folder
+                    using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                               packageSource.Source,
+                               packageToInstall,
+                               downloadResourceResult.PackageStream,
+                               NuGetRootPath,
+                               Guid.Empty,
+                               clientPolicyContext,
+                               nuGetLogger,
+                               CancellationToken.None))
+                    {
+                        LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                    }
+                }
+            }
+            catch
+            {
+                LogDebug("Retrying to add package without caching");
+                string tempDir = FileSystem.Instance.Directory.CreateTemporaryDirectory();
 
-                packageStream.Seek(0, System.IO.SeekOrigin.Begin);
-                var policy = ClientPolicyContext.GetClientPolicy(settings, nuGetLogger);
-
-                // Add it to the global package folder
-                var result = await GlobalPackagesFolderUtility.AddPackageAsync(
-                    packageSource.Source,
-                    packageToInstall,
-                    packageStream,
-                    NuGetRootPath,
-                    Guid.Empty,
-                    policy,
-                    nuGetLogger,
-                    CancellationToken.None);
-
-                LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                try
+                {
+                    // Retrying without cache
+                    using (DownloadResourceResult downloadResourceResult = await resource.GetDownloadResourceResultAsync(
+                               packageToInstall,
+                               new PackageDownloadContext(cacheContext, tempDir, true),
+                               SettingsUtility.GetGlobalPackagesFolder(settings),
+                               nuGetLogger,
+                               cancelToken))
+                    {
+                        // Add it to the global package folder
+                        using (DownloadResourceResult result = await GlobalPackagesFolderUtility.AddPackageAsync(
+                                   packageSource.Source,
+                                   packageToInstall,
+                                   downloadResourceResult.PackageStream,
+                                   NuGetRootPath,
+                                   Guid.Empty,
+                                   clientPolicyContext,
+                                   nuGetLogger,
+                                   CancellationToken.None))
+                        {
+                            LogDebug($"InstallPackageIfNotFound|Finished installing package {packageToInstall.Id} - {packageToInstall.Version} with status: " + result?.Status);
+                        }
+                    }
+                }
+                finally
+                {
+                    FileSystem.Instance.Directory.DeleteDirectory(tempDir);
+                }
             }
         }
 

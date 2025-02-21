@@ -2,12 +2,15 @@
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using FluentAssertions;
     using FluentAssertions.Equivalency;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using NuGet.Packaging.Core;
     using NuGet.Versioning;
+
     using Skyline.DataMiner.CICD.Common.NuGet;
 
     [TestClass]
@@ -16,7 +19,7 @@
         [TestMethod]
         public async Task ProcessAsyncTest_FilesNuGet_OnlyReturnsAssemblyName_Protocol()
         {
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
@@ -44,7 +47,7 @@
         [TestMethod]
         public async Task ProcessAsyncTest_FilesNuGet_OnlyReturnsAssemblyName_Automation()
         {
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
@@ -73,7 +76,7 @@
         public async Task ProcessAsyncTest_CommonScenario()
         {
             // Arrange
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
@@ -116,12 +119,12 @@
             // Assert
             result.Should().BeEquivalentTo(expectedResult, ExcludeAssemblyPath);
         }
-        
+
         [TestMethod]
         public async Task ProcessAsyncTest_UseOfOtherDevPackFile()
         {
             // Arrange
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
@@ -175,7 +178,7 @@
         public async Task ProcessAsyncTest_UnitTestScenario()
         {
             // Arrange
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
@@ -242,7 +245,7 @@
 
                     // Dependencies from System.Threading.Tasks.Extensions
                     "System.Runtime.CompilerServices.Unsafe.dll",
-                    
+
                     "System.Configuration.dll",
                     "mscorlib.dll",
                 },
@@ -264,7 +267,7 @@
         public async Task ProcessAsyncTest_UnitTestScenario_Yle_Library()
         {
             // Arrange
-            var packageReferenceProcessor = new PackageReferenceProcessor();
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
 
             IList<PackageIdentity> projectPackages = new List<PackageIdentity>
             {
