@@ -454,8 +454,7 @@
                         foreach (var filteredLibItem in filteredLibItems)
                         {
                             var fullPath = _fileSystem.Path.Combine(NuGetRootPath, packageToInstall.Id.ToLower(), packageToInstall.Version.ToString().ToLower(), filteredLibItem);
-                            string fileName = _fileSystem.Path.GetFileName(filteredLibItem);
-                            var dllImportValue = dllImportDirectory + "\\" + fileName;
+                            var dllImportValue = dllImportDirectory + "\\" + _fileSystem.Path.GetFileName(filteredLibItem);
 
                             nugetPackageAssemblies.NugetAssemblies.Add(new PackageAssemblyReference(dllImportValue, fullPath));
                         }
