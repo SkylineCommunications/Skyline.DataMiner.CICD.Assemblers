@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -17,6 +17,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/SkylineCommunications/Skyline.DataMiner.CICD.Assemblers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <Version>0.0.2-local</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +31,7 @@
     <PackageReference Include="NuGet.PackageManagement" Version="6.6.2" />
     <PackageReference Include="Skyline.DataMiner.CICD.Common" Version="1.0.6" />
     <PackageReference Include="Skyline.DataMiner.CICD.Loggers" Version="1.0.3" />
-    <PackageReference Include="Skyline.DataMiner.CICD.Parsers.Common" Version="1.1.3" />
+    <PackageReference Include="Skyline.DataMiner.CICD.Parsers.Common" Version="0.0.1-local" />
   </ItemGroup>
 
 </Project>
