@@ -16,6 +16,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/SkylineCommunications/Skyline.DataMiner.CICD.Assemblers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <Version>0.0.1-local</Version>
   </PropertyGroup>
 
   <ItemGroup>
