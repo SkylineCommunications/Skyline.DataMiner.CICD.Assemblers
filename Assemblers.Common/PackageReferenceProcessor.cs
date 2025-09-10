@@ -294,6 +294,11 @@
                                 isFilePackage = !info.InDllImportDirectory;
                                 dontAddToPackageToInstall = true;
                             }
+                            else if (NuGetHelper.IsSolutionLibraryNuGetPackage(resolvedPackage.Id, out string name))
+                            {
+                                dllImportValue = $"SolutionLibraries\\{name}";
+                                dontAddToPackageToInstall = true;
+                            }
                             else
                             {
                                 fullPath = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(NuGetRootPath, resolvedPackage.Id.ToLower(), resolvedPackage.Version.ToString().ToLower(), filteredLibItem));

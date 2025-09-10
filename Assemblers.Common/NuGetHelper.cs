@@ -2,6 +2,7 @@
 {
     using System.Collections.Generic;
     using System.Linq;
+
     using Skyline.DataMiner.CICD.Common.NuGet;
 
     internal static class NuGetHelper
@@ -20,7 +21,22 @@
 
         public static bool SkipPackageDependencies(string packageId)
         {
-            return CustomNuGetPackages.ContainsKey(packageId);
+            return CustomNuGetPackages.ContainsKey(packageId) || IsSolutionLibraryNuGetPackage(packageId, out _);
+        }
+
+        public static bool IsSolutionLibraryNuGetPackage(string packageId, out string name)
+        {
+            // Solution 'devpacks' (like MediaOps)
+            const string prefix = "Skyline.DataMiner.Dev.Utils.";
+
+            if (packageId.StartsWith(prefix))
+            {
+                name = packageId.Substring(prefix.Length);
+                return true;
+            }
+
+            name = null;
+            return false;
         }
     }
 }
