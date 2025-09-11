@@ -2,17 +2,17 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Text.RegularExpressions;
+    using System.Reflection;
     using System.Threading.Tasks;
-
+    using FluentAssertions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+    using NuGet.ContentModel;
     using Org.XmlUnit.Builder;
     using Org.XmlUnit.Diff;
 
     using Skyline.DataMiner.CICD.Assemblers.Automation;
     using Skyline.DataMiner.CICD.Assemblers.Common;
-    using Skyline.DataMiner.CICD.Loggers;
+    using Skyline.DataMiner.CICD.FileSystem;
     using Skyline.DataMiner.CICD.Parsers.Automation.Xml;
     using Skyline.DataMiner.CICD.Parsers.Common.VisualStudio.Projects;
     using Skyline.DataMiner.CICD.Parsers.Common.Xml;
@@ -783,6 +783,33 @@ class Class1 {}]]>
                                 .WithTest(Input.FromString(result)).Build();
             
             Assert.IsFalse(d.HasDifferences(), d.ToString());
+        }
+
+        [TestMethod]
+        public async Task AutomationScriptBuilder_SolutionLibraries()
+        {
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Projects\Project1"));
+            var path = FileSystem.Instance.Path.Combine(dir, "Project1.csproj");
+            
+            var projects = new Dictionary<string, Project>
+            {
+                { "Project1", Project.Load(path) },
+            };
+            
+            Script script = Script.Load(FileSystem.Instance.Path.Combine(dir, "Project1.xml"));
+            AutomationScriptBuilder builder = new AutomationScriptBuilder(script, projects, new List<Script> { script }, directoryForNuGetConfig: null);
+
+            var result = await builder.BuildAsync().ConfigureAwait(false);
+
+            result.Should().NotBeNull();
+            result.Document.Should()
+                  .ContainEquivalentOf(
+                      "<Param type=\"ref\">C:\\Skyline DataMiner\\ProtocolScripts\\DllImport\\SolutionLibraries\\ModSolutionLib\\Skyline.DataMiner.Dev.Utils.ModSolutionLib.dll</Param>");
+
+            // Only needs to be referenced, shouldn't be part of the script itself
+            result.Assemblies.Should().BeEmpty();
+            result.DllAssemblies.Should().BeEmpty();
         }
     }
 }
