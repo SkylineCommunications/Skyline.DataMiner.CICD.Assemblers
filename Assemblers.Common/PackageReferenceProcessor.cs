@@ -294,6 +294,12 @@
                                 isFilePackage = !info.InDllImportDirectory;
                                 dontAddToPackageToInstall = true;
                             }
+                            else if (NuGetHelper.IsSolutionLibraryNuGetPackage(resolvedPackage.Id, out string name))
+                            {
+                                // Use the name of the solution library as the folder name. Everything after 'Skyline.DataMiner.Dev.Utils.' is considered the name.
+                                dllImportValue = $"SolutionLibraries\\{name}\\{assemblyName}";
+                                dontAddToPackageToInstall = true;
+                            }
                             else
                             {
                                 fullPath = _fileSystem.Path.GetFullPath(_fileSystem.Path.Combine(NuGetRootPath, resolvedPackage.Id.ToLower(), resolvedPackage.Version.ToString().ToLower(), filteredLibItem));

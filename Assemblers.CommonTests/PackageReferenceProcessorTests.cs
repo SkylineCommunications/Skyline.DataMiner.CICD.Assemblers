@@ -377,6 +377,60 @@
             result.Should().BeEquivalentTo(expectedResult, ExcludeAssemblyPath);
         }
 
+        [TestMethod]
+        public async Task ProcessAsyncTest_SolutionLibraries()
+        {
+            // Arrange
+            var packageReferenceProcessor = new PackageReferenceProcessor(directoryForNuGetConfig: null);
+
+            IList<PackageIdentity> projectPackages = new List<PackageIdentity>
+            {
+                new PackageIdentity("Skyline.DataMiner.Dev.Automation", new NuGetVersion("10.3.5")),
+                new PackageIdentity("Newtonsoft.Json", new NuGetVersion("13.0.3")),
+                new PackageIdentity("Skyline.DataMiner.Dev.Utils.ModSolutionLib", new NuGetVersion("1.0.0")),
+            };
+
+            const string targetFrameworkMoniker = ".NETFramework,Version=v4.8";
+
+            const string pathJson = "newtonsoft.json\\13.0.3\\lib\\net45";
+            const string pathSolutionLib = "skyline.dataminer.dev.utils.modsolutionlib\\1.0.0\\lib\\netstandard2.0";
+            var expectedResult = new NuGetPackageAssemblyData
+            {
+                ImplicitDllImportDirectoryReferences =
+                {
+                    pathJson,
+                    pathSolutionLib,
+                },
+                DllImportNugetAssemblyReferences =
+                {
+                    new PackageAssemblyReference(pathJson + "\\Newtonsoft.Json.dll", null, false),
+                    new PackageAssemblyReference("SolutionLibraries\\ModSolutionLib\\Skyline.DataMiner.Dev.Utils.ModSolutionLib.dll", null, false),
+                 },
+                NugetAssemblies =
+                {
+                    new PackageAssemblyReference(pathJson + "\\Newtonsoft.Json.dll", null, false),
+                },
+                ProcessedAssemblies =
+                {
+                    "Newtonsoft.Json.dll",
+
+                    "Skyline.DataMiner.Dev.Utils.ModSolutionLib.dll",
+                },
+                DllImportDirectoryReferencesAssembly =
+                {
+                },
+                DllImportDirectoryReferences =
+                {
+                }
+            };
+
+            // Act
+            var result = await packageReferenceProcessor.ProcessAsync(projectPackages, targetFrameworkMoniker);
+
+            // Assert
+            result.Should().BeEquivalentTo(expectedResult, ExcludeAssemblyPath);
+        }
+
         private static EquivalencyAssertionOptions<NuGetPackageAssemblyData> ExcludeAssemblyPath(EquivalencyAssertionOptions<NuGetPackageAssemblyData> arg)
         {
             arg.Excluding(x => x.Path.EndsWith("AssemblyPath"));

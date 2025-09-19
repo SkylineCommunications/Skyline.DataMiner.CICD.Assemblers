@@ -6,6 +6,8 @@
     using System.Reflection;
     using System.Threading.Tasks;
 
+    using FluentAssertions;
+
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     using Org.XmlUnit.Builder;
@@ -27,7 +29,7 @@
             var logCollector = new Logging(true);
 
             var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution2"));
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution2"));
             var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
 
             ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
@@ -46,7 +48,7 @@
             var logCollector = new Logging(true);
 
             var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution3"));
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution3"));
             var solutionFilePath = FileSystem.Instance.Path.Combine(dir, "protocol.sln");
 
             ProtocolSolution solution = ProtocolSolution.Load(solutionFilePath, logCollector);
@@ -680,7 +682,7 @@ class Class1 {}]]>
         {
             // arrange
             var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Protocol\Solution1"));
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution1"));
             var path = FileSystem.Instance.Path.Combine(dir, "Protocol.sln");
 
             var solution = ProtocolSolution.Load(path);
@@ -800,6 +802,31 @@ namespace QAction_3
             var projects = new Dictionary<string, Project>(0);
 
             Assert.ThrowsException<AssemblerException>(() => new ProtocolBuilder(XmlDocument.Parse(originalProtocol), projects, "1.0.0.1_DIS"));
+        }
+
+        [TestMethod]
+        public async Task ProtocolSolution_BuildAsync_SolutionLibraries()
+        {
+            // Arrange
+            var baseDir = FileSystem.Instance.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            var dir = FileSystem.Instance.Path.GetFullPath(FileSystem.Instance.Path.Combine(baseDir, @"TestFiles\Solutions\Solution4"));
+            var path = FileSystem.Instance.Path.Combine(dir, "Protocol.sln");
+
+            var solution = ProtocolSolution.Load(path);
+
+            // Act
+            ProtocolBuilder builder = new ProtocolBuilder(solution);
+            var result = await builder.BuildAsync().ConfigureAwait(false);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Document.Should()
+                  .ContainEquivalentOf(
+                      "dllImport=\"SolutionLibraries\\ModSolutionLib\\Skyline.DataMiner.Dev.Utils.ModSolutionLib.dll\"");
+
+            // Only needs to be referenced, shouldn't be part of the script itself
+            result.Assemblies.Should().BeEmpty();
+            result.DllAssemblies.Should().BeEmpty();
         }
     }
 }
