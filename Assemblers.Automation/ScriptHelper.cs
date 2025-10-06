@@ -38,6 +38,7 @@
         public static readonly string[] DllsWithProtocolScriptsPath =
         {
             "DataMinerSolutions.dll",
+            "ProcessAutomation.dll"
         };
 
         /// <summary>
