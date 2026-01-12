@@ -1,5 +1,8 @@
 # Skyline.DataMiner.CICD.Assemblers
 
+> **Important**
+> This repository has been merged in the [Skyline.DataMiner.CICD.Packages](https://github.com/SkylineCommunications/Skyline.DataMiner.CICD.Packages) repository and as such is archived. Any future developments or issue reporting should happen on the other repository.
+
 ## About
 
 ### About Skyline.DataMiner.CICD.Assemblers packages
